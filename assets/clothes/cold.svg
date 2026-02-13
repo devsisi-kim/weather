@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" aria-label="트렌치/야상">
+  <defs>
+    <linearGradient id="coldTop" x1="30" y1="20" x2="90" y2="98" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d9ecff"/>
+      <stop offset="1" stop-color="#8caec9"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#6c89a6" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <g filter="url(#soft)">
+    <ellipse cx="60" cy="104" rx="31" ry="6" fill="#454545" opacity="0.14"/>
+    <path d="M22 24l4 22H20c-8 0-14 6-14 13v17h88V59c0-7-6-13-14-13H94l4-22H22z" fill="#f7fbff"/>
+    <path d="M24 46h72v33H24z" fill="url(#coldTop)"/>
+    <path d="M44 46v22" stroke="#6d95b6" stroke-width="2.5"/>
+    <path d="M76 46v22" stroke="#6d95b6" stroke-width="2.5"/>
+    <path d="M30 46v8" stroke="#6d95b6" stroke-width="2.5"/>
+    <path d="M90 46v8" stroke="#6d95b6" stroke-width="2.5"/>
+    <path d="M30 62h60" stroke="#6d95b6" stroke-width="2.5"/>
+    <path d="M30 68h60" stroke="#6d95b6" stroke-width="2.5"/>
+    <rect x="48" y="68" width="24" height="11" rx="5.5" fill="#dceef8"/>
+    <rect x="50" y="82" width="20" height="10" rx="3" fill="#f3f9ff"/>
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" aria-label="자켓/후드">
+  <defs>
+    <linearGradient id="chillyTop" x1="30" y1="22" x2="90" y2="100" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#d6e6f4"/>
+      <stop offset="1" stop-color="#7fb0d6"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#5f87ab" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <g filter="url(#soft)">
+    <ellipse cx="60" cy="104" rx="31" ry="6" fill="#3f3f3f" opacity="0.14"/>
+    <path d="M24 24c0-7 6-12 14-12h44c8 0 14 5 14 12v24h12l-2 38h-16l2 16H36l2-16H22L20 48h4V24z" fill="url(#chillyTop)"/>
+    <path d="M35 24h50v20H35z" fill="#f4fbff"/>
+    <path d="M28 47h64v31H28z" fill="#d7ebfb"/>
+    <path d="M33 47h54" stroke="#90b4d8" stroke-width="2.5"/>
+    <path d="M33 53h54" stroke="#90b4d8" stroke-width="2.5"/>
+    <path d="M33 59h54" stroke="#90b4d8" stroke-width="2.5"/>
+    <path d="M40 82h44v18H40z" fill="#edf7ff"/>
+    <path d="M52 26h16v7h-16z" fill="#4a6f8f"/>
+    <path d="M52 26c-5 0-9 3-9 8" stroke="#4a6f8f" stroke-width="2.5" fill="none"/>
+  </g>
+</svg>
