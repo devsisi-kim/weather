@@ -263,6 +263,8 @@ function renderCards() {
     return;
   }
 
+  cardsEl.classList.toggle("single-card", state.cards.length === 1);
+
   cardsEl.innerHTML = state.cards
     .map((entry) => {
       const isTomorrow = state.dateFilter === "tomorrow";
@@ -331,17 +333,17 @@ function renderCards() {
         <p class="metrics-sub">데이터: ${weather.source === "fallback" ? `임시 (${weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt, weather.timezone)})</p>
         <hr class="divider"/>
         <h3 class="section-title">${isTomorrow ? "Tomorrow's" : "Today's"} Outfit</h3>
-        <div class="outfit-recommendation">
+        <div class="recommendation">
           <img src="${recommendation.image}" alt="${recommendation.outfitLabel}" class="outfit-image" />
           <div class="outfit-details">
             <div class="outfit-main-items">
-              ${recommendation.items.map((item, index) => `<span class="outfit-item tooltip-container">${item.name}${item.note ? `<span class="tooltip">${item.note}</span>` : ''}</span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`).join("")}
+              ${recommendation.items.map((item, index) => `<span class="outfit-item">${item.name}</span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`).join("")}
             </div>
             ${recommendation.accessories.length > 0 ? `
             <div class="accessories-section">
               <p class="outfit-category">Accessories</p>
               <ul class="checklist">
-                ${recommendation.accessories.map((acc) => `<li class="tooltip-container"><span class="check-icon">✓</span> ${acc.name}${acc.note ? `<span class="tooltip">${acc.note}</span>` : ''}</li>`).join("")}
+                ${recommendation.accessories.map((acc) => `<li><span class="check-icon">✓</span> ${acc.name}</li>`).join("")}
               </ul>
             </div>
             ` : ''}

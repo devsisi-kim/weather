@@ -285,36 +285,34 @@ button[disabled] {
 .date-tabs {
   display: flex;
   justify-content: center;
-  gap: 12px;
-  margin-top: 16px;
-  margin-bottom: 24px;
+  gap: 8px;
+  margin-top: 8px;
+  margin-bottom: 12px;
 }
 
 .tab-btn {
-  background: var(--surface);
-  color: var(--text);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 20px;
-  padding: 8px 24px;
-  font-size: 0.95rem;
-  font-weight: 600;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 4px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  min-height: 40px;
-  box-shadow: 0 4px 12px rgba(35, 85, 126, 0.05);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  min-height: 30px;
   transition: all 0.2s ease;
 }
 
 .tab-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .tab-btn.active {
-  background: var(--primary);
-  color: white;
+  background: white;
+  color: var(--primary);
   border-color: var(--primary);
-  box-shadow: 0 8px 20px rgba(33, 150, 243, 0.3);
+  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
 }
 
 .cards {
@@ -407,7 +405,7 @@ button[disabled] {
 
 .metrics-row {
   display: flex;
-  gap: 16px;
+  justify-content: space-between;
   align-items: center;
   margin-top: 14px;
   margin-bottom: 12px;
@@ -416,6 +414,7 @@ button[disabled] {
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: thin;
+  width: 100%;
 }
 
 .metric-mini {
@@ -423,7 +422,9 @@ button[disabled] {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  min-width: 54px;
+  flex: 1;
+  /* 가로 너비 균등 분할 */
+  min-width: 0;
 }
 
 .metric-mini-icon {
@@ -603,11 +604,23 @@ button[disabled] {
 .tooltip-container:active .tooltip {
   visibility: visible;
   opacity: 1;
+  transform: translateX(-50%) translateY(0);
 }
 
 .empty {
   color: var(--muted);
   margin: 0;
+}
+
+@media (min-width: 768px) {
+  .cards.single-card .outfit-image {
+    width: 220px;
+    height: 220px;
+  }
+
+  .cards.single-card .outfit-details {
+    font-size: 1.1em;
+  }
 }
 
 @media (max-width: 640px) {
