@@ -89,12 +89,12 @@ header h1 {
 
 .panel {
   margin-top: 20px;
-  background: color-mix(in srgb, var(--surface) 96%, transparent);
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 20px;
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 22px;
+  box-shadow: 0 16px 36px rgba(35, 85, 126, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .search-panel {
@@ -147,7 +147,7 @@ header h1 {
   align-items: center;
   background: var(--surface);
   border: 1px solid #a9c8dc;
-  border-radius: 6px;
+  border-radius: 10px;
   padding: 4px 8px;
   min-width: 250px;
   transition: border-color 0.2s;
@@ -226,7 +226,7 @@ input:focus {
 .btn,
 button {
   border: 0;
-  border-radius: 6px;
+  border-radius: 10px;
   color: white;
   cursor: pointer;
   padding: 11px 16px;
