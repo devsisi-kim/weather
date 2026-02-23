@@ -87,19 +87,8 @@ header h1 {
   color: var(--muted);
 }
 
-.panel {
-  margin-top: 20px;
-  background: rgba(255, 255, 255, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 22px;
-  box-shadow: 0 16px 36px rgba(35, 85, 126, 0.1);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.search-panel {
-  padding: 16px 20px 8px;
-  /* Reduce bottom padding for compactness */
+.search-section {
+  margin: 24px 0;
 }
 
 .tag-list-inline {
@@ -145,16 +134,23 @@ header h1 {
   display: flex;
   flex: 1 1 300px;
   align-items: center;
-  background: var(--surface);
-  border: 1px solid #a9c8dc;
-  border-radius: 10px;
-  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 22px;
+  box-shadow: 0 8px 24px rgba(35, 85, 126, 0.08);
+  /* Light appealing shadow */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  padding: 6px 14px;
   min-width: 250px;
-  transition: border-color 0.2s;
+  min-height: 48px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .search-input-container:focus-within {
-  border-color: var(--primary);
+  border-color: rgba(33, 150, 243, 0.6);
+  /* --primary with transparency */
+  box-shadow: 0 8px 24px rgba(35, 85, 126, 0.15);
 }
 
 .input-group {
@@ -226,12 +222,13 @@ input:focus {
 .btn,
 button {
   border: 0;
-  border-radius: 10px;
+  border-radius: 22px;
   color: white;
   cursor: pointer;
-  padding: 11px 16px;
+  padding: 11px 18px;
   font-weight: 600;
-  transition: filter 0.2s ease, background 0.2s ease;
+  min-height: 48px;
+  transition: filter 0.2s ease, background 0.2s ease, opacity 0.2s ease;
 }
 
 .btn:hover,

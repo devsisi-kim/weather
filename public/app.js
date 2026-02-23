@@ -9,6 +9,8 @@ const formEl = document.getElementById("location-form");
 const inputEl = document.getElementById("location-input");
 const refreshEl = document.getElementById("refresh-button");
 const autocompleteListEl = document.getElementById("autocomplete-list");
+const cardsEl = document.getElementById("cards");
+const applyButtonEl = document.getElementById("apply-button");
 
 formEl.addEventListener("submit", onAddLocation);
 refreshEl.addEventListener("click", refreshRecommendations);
@@ -17,6 +19,14 @@ let searchTimeout = null;
 
 inputEl.addEventListener("input", (e) => {
   const val = e.target.value.trim();
+
+  // 입력 여부에 따라 '적용' 버튼 활성화 상태 관리
+  if (val.length > 0) {
+    applyButtonEl.disabled = false;
+  } else {
+    applyButtonEl.disabled = true;
+  }
+
   clearTimeout(searchTimeout);
 
   if (!val) {
@@ -105,6 +115,7 @@ function renderAutocomplete(results) {
 async function addLocationFromSuggestion(item) {
   autocompleteListEl.hidden = true;
   inputEl.value = "";
+  applyButtonEl.disabled = true;
 
   if (state.locations.length >= 2) {
     updateStatus("위치는 최대 2개까지만 저장할 수 있습니다.", "error");
@@ -161,6 +172,7 @@ async function onAddLocation(event) {
     saveToLocal();
     renderLocationTags();
     inputEl.value = "";
+    applyButtonEl.disabled = true;
     updateStatus("위치 추가 완료", "ok");
     await refreshRecommendations();
   } catch (error) {
