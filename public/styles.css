@@ -102,6 +102,8 @@ header h1 {
 
 .search-section {
   margin: 24px 0;
+  position: relative;
+  z-index: 200;
 }
 
 .tag-list-inline {
