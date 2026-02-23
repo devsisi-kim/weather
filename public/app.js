@@ -223,6 +223,12 @@ function renderLocationTags() {
   for (const button of locationsEl.querySelectorAll(".tag")) {
     button.addEventListener("click", () => removeLocation(button.dataset.id));
   }
+
+  if (state.locations.length >= 2) {
+    inputEl.placeholder = "";
+  } else {
+    inputEl.placeholder = "위치 추가: 예) Seoul, Tokyo";
+  }
 }
 
 async function refreshRecommendations() {

@@ -35,14 +35,6 @@
             </div>
           </div>
           <button id="apply-button" type="submit" class="btn btn-primary" disabled>적용</button>
-          <button id="refresh-button" type="button" class="btn btn-secondary btn-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor"
-              stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
-              <path d="M21.5 2v6h-6" />
-              <path d="M21.34 15.57a10 10 0 1 1-.59-8.4L21.5 8" />
-            </svg>
-            새로고침
-          </button>
         </div>
       </form>
 
@@ -50,6 +42,17 @@
     </section>
 
     <section id="cards" class="cards"></section>
+
+    <div style="text-align: center; margin: 32px 0;">
+      <button id="refresh-button" type="button" class="btn btn-icon outline-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" stroke="currentColor"
+          stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">
+          <path d="M21.5 2v6h-6" />
+          <path d="M21.34 15.57a10 10 0 1 1-.59-8.4L21.5 8" />
+        </svg>
+        새로고침
+      </button>
+    </div>
   </main>
 
   <script type="module" src="./app.js"></script>

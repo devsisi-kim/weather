@@ -140,12 +140,12 @@ header h1 {
   display: flex;
   gap: 8px;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .search-input-container {
   display: flex;
-  flex: 1 1 300px;
+  flex: 1 1 auto;
   align-items: center;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.8);
@@ -155,7 +155,7 @@ header h1 {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   padding: 4px 14px;
-  min-width: 250px;
+  min-width: 0;
   min-height: 42px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
@@ -264,6 +264,10 @@ button:focus-visible {
   background: var(--primary);
 }
 
+#apply-button {
+  flex-shrink: 0;
+}
+
 .btn-icon {
   display: inline-flex;
   align-items: center;
@@ -272,6 +276,20 @@ button:focus-visible {
 
 .btn-secondary {
   background: var(--muted);
+}
+
+.outline-btn {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  box-shadow: none;
+  font-weight: 500;
+}
+
+.outline-btn:hover {
+  background: rgba(0, 0, 0, 0.03);
+  color: var(--text);
+  border-color: var(--muted);
 }
 
 button[disabled] {
