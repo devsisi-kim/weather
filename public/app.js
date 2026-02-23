@@ -187,7 +187,7 @@ function renderLocationTags() {
     )
     .join("");
 
-  locationsEl.innerHTML = html || "<p class=\"empty\">저장된 위치가 없습니다.</p>";
+  locationsEl.innerHTML = html || "";
 
   for (const button of locationsEl.querySelectorAll(".tag")) {
     button.addEventListener("click", () => removeLocation(button.dataset.id));
