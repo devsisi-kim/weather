@@ -82,64 +82,32 @@ function requestJson(port, method, pathname, body) {
 }
 
 async function withServer(run) {
-  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "weather-app-test-"));
-  const dataFile = path.join(tmpDir, "locations.json");
-  const server = createWeatherServer({ dataFile, fetchImpl: buildMockFetch() });
+  const server = createWeatherServer({ fetchImpl: buildMockFetch() });
 
   await new Promise((resolve) => server.listen(0, resolve));
   const port = server.address().port;
 
   try {
-    await run({ port, dataFile });
+    await run({ port });
   } finally {
     await new Promise((resolve, reject) => server.close((err) => (err ? reject(err) : resolve())));
   }
 }
 
-test("GET /api/locations seeds default two locations", async () => {
-  await withServer(async ({ port, dataFile }) => {
-    const response = await requestJson(port, "GET", "/api/locations");
+test("POST /api/recommendations returns cards with recommendation", async () => {
+  await withServer(async ({ port }) => {
+    const locations = [
+      { id: "test-1", name: "Seoul", latitude: 37.5, longitude: 127.0 },
+      { id: "test-2", name: "Busan", latitude: 35.1, longitude: 129.0 }
+    ];
+
+    const response = await requestJson(port, "POST", "/api/recommendations", { locations });
 
     assert.equal(response.status, 200);
-    assert.equal(response.body.locations.length, 2);
-
-    const storedRaw = await readFile(dataFile, "utf-8");
-    const stored = JSON.parse(storedRaw);
-    assert.equal(stored.length, 2);
-  });
-});
-
-test("POST /api/locations blocks when already two locations", async () => {
-  await withServer(async ({ port }) => {
-    const response = await requestJson(port, "POST", "/api/locations", { query: "Tokyo" });
-
-    assert.equal(response.status, 400);
-    assert.match(response.body.message, /최대 2개/);
-  });
-});
-
-test("DELETE then POST /api/locations succeeds", async () => {
-  await withServer(async ({ port }) => {
-    const list = await requestJson(port, "GET", "/api/locations");
-    const firstId = list.body.locations[0].id;
-
-    const deleted = await requestJson(port, "DELETE", `/api/locations/${firstId}`);
-    assert.equal(deleted.status, 200);
-
-    const created = await requestJson(port, "POST", "/api/locations", { query: "Tokyo" });
-    assert.equal(created.status, 201);
-    assert.equal(created.body.locations.length, 2);
-    assert.equal(created.body.location.name, "Tokyo");
-  });
-});
-
-test("GET /api/recommendations returns cards with recommendation", async () => {
-  await withServer(async ({ port }) => {
-    const response = await requestJson(port, "GET", "/api/recommendations");
-
-    assert.equal(response.status, 200);
-    assert.ok(response.body.cards.length >= 1);
+    assert.equal(response.body.cards.length, 2);
     assert.ok(response.body.cards[0].recommendation);
     assert.ok(Array.isArray(response.body.cards[0].recommendation.items));
+    assert.equal(response.body.cards[0].name, "Seoul");
+    assert.equal(response.body.cards[1].name, "Busan");
   });
 });

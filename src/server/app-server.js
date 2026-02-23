@@ -51,56 +51,7 @@ function parseRequestBody(req) {
   });
 }
 
-async function ensureDataFile(dataFile) {
-  const dir = path.dirname(dataFile);
-  await fs.mkdir(dir, { recursive: true });
-
-  try {
-    await fs.access(dataFile);
-  } catch {
-    const seed = [
-      { id: crypto.randomUUID(), name: "Seoul", latitude: 37.5665, longitude: 126.978 },
-      { id: crypto.randomUUID(), name: "Busan", latitude: 35.1796, longitude: 129.0756 },
-    ];
-    await fs.writeFile(dataFile, JSON.stringify(seed, null, 2), "utf-8");
-  }
-}
-
-async function loadLocations(dataFile) {
-  await ensureDataFile(dataFile);
-  const raw = await fs.readFile(dataFile, "utf-8");
-  const parsed = JSON.parse(raw);
-  return Array.isArray(parsed) ? parsed.slice(0, 2) : [];
-}
-
-async function saveLocations(dataFile, locations) {
-  await fs.writeFile(dataFile, JSON.stringify(locations.slice(0, 2), null, 2), "utf-8");
-}
-
-async function geocodeLocation(fetchImpl, query) {
-  const endpoint = new URL("https://geocoding-api.open-meteo.com/v1/search");
-  endpoint.searchParams.set("name", query);
-  endpoint.searchParams.set("count", "1");
-  endpoint.searchParams.set("language", "en");
-
-  const response = await fetchImpl(endpoint);
-  if (!response.ok) {
-    throw new Error("위치 검색 API 요청에 실패했습니다.");
-  }
-
-  const data = await response.json();
-  const first = data?.results?.[0];
-  if (!first) {
-    throw new Error("위치를 찾지 못했습니다.");
-  }
-
-  return {
-    id: crypto.randomUUID(),
-    name: first.name,
-    latitude: first.latitude,
-    longitude: first.longitude,
-  };
-}
+// File read/write logic has been removed for Vercel Serverless compatibility.
 
 async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   const endpoint = new URL("https://api.open-meteo.com/v1/forecast");
@@ -349,7 +300,6 @@ async function serveStatic(req, res) {
 export default async function handler(req, res) {
   const method = req.method || "GET";
   const urlPath = req.url || "/";
-  const dataFile = path.resolve(process.cwd(), "data", "locations.json");
 
   // Vercel 환경에서는 /data 작성이 불가능할 수 있으므로 읽기 전용으로 fallback
   const fetchImpl = fetch;
@@ -360,55 +310,11 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (urlPath === "/api/locations" && method === "GET") {
-      const locations = await loadLocations(dataFile);
-      json(res, 200, { locations });
-      return;
-    }
-
-    if (urlPath === "/api/locations" && method === "POST") {
+    // 클라이언트로부터 배열을 전달받아 상태없이(Stateless) 추천 API 연산
+    if (urlPath.includes("/api/recommendations") && method === "POST") {
       const body = await parseRequestBody(req);
-      const query = String(body.query || "").trim();
+      const locations = Array.isArray(body.locations) ? body.locations : [];
 
-      if (!query) {
-        json(res, 400, { message: "query 값이 필요합니다." });
-        return;
-      }
-
-      const locations = await loadLocations(dataFile);
-      if (locations.length >= 2) {
-        json(res, 400, { message: "위치는 최대 2개까지만 저장할 수 있습니다." });
-        return;
-      }
-
-      const next = await geocodeLocation(fetchImpl, query);
-      locations.push(next);
-      try {
-        await saveLocations(dataFile, locations);
-      } catch (e) {
-        console.warn("Vercel Read-only FS: Failed to save location.");
-      }
-      json(res, 201, { location: next, locations });
-      return;
-    }
-
-    if (urlPath.startsWith("/api/locations/") && method === "DELETE") {
-      const id = urlPath.split("/").pop();
-      const locations = await loadLocations(dataFile);
-      const filtered = locations.filter((item) => item.id !== id);
-
-      try {
-        await saveLocations(dataFile, filtered);
-      } catch (e) {
-        console.warn("Vercel Read-only FS: Failed to save location.");
-      }
-      json(res, 200, { locations: filtered });
-      return;
-    }
-
-    // Vercel 에서는 /api/recommendations 로 들어올 수도 있고, rewrite 룰에 따라 바뀔 수도 있음
-    if (urlPath.includes("/api/recommendations") && method === "GET") {
-      const locations = await loadLocations(dataFile);
       const cards = await Promise.all(
         locations.map(async (location) => {
           let weather;

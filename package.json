@@ -4,6 +4,6 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/recommendation.test.js && node tests/api-smoke.mjs"
+    "test": "node --test tests/*.test.js"
   }
 }
