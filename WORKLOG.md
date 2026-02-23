@@ -112,17 +112,16 @@
 - 결정 사항: 무료 소스 2중화를 유지하되, WAQI는 demo 토큰으로 1차 폴백만 사용
 - 다음 액션: `npm test` 실행으로 회귀 검증 후 README 실행 가이드 보완
 - 참조 문서/커밋: /Users/sia/Documents/New project/src/server/app-server.js, /Users/sia/Documents/New project/tests/api-smoke.mjs
-
-## 2026-02-13 17:20 - [Build]
-- 요청/배경: 실서비스에서 대기질 조회 연속 실패를 줄이기 위한 운영 보강 필요
-- 수행 내용:
-  - `WAQI` 조회 시 `WAQI_TOKEN` 환경변수 사용을 지원하도록 백엔드 변경
-  - 기본 동작은 `demo` 유지, 토큰 없으면 폴백 동작으로 즉시 실행 가능성 보존
-  - README에 WAQI 토큰 설정 예시 추가
-- 검증 결과: `npm test` 통과
-- 결정 사항: 배포 시에는 `WAQI_TOKEN` 주입을 권장하고, 개발 초기엔 설정 없이도 동작 가능
-- 다음 액션: 토큰 미설정/제한치 발생 시 사용자 메시지 정책 추가 고려
-- 참조 문서/커밋: /Users/sia/Documents/New project/src/server/app-server.js, /Users/sia/Documents/New project/README.md
+116: ## 2026-02-13 17:20 - [Build]
+117: - 요청/배경: 실서비스에서 대기질 조회 연속 실패를 줄이기 위한 운영 보강 필요
+118: - 수행 내용:
+119:   - `WAQI` 조회 시 `WAQI_TOKEN` 환경변수 사용을 지원하도록 백엔드 변경
+120:   - 기본 동작은 `demo` 유지, 토큰 없으면 폴백 동작으로 즉시 실행 가능성 보존
+121:   - README에 WAQI 토큰 설정 예시 추가
+122: - 검증 결과: `npm test` 통과
+123: - 결정 사항: 배포 시에는 `WAQI_TOKEN` 주입을 권장하고, 개발 초기엔 설정 없이도 동작 가능
+124: - 다음 액션: 토큰 미설정/제한치 발생 시 사용자 메시지 정책 추가 고려
+125: - 참조 문서/커밋: /Users/sia/Documents/New project/src/server/app-server.js, /Users/sia/Documents/New project/README.md
 
 ## 2026-02-13 17:15 - [Design/Build]
 - 요청/배경: 앱 디자인 개선 (3D 옷 일러스트 + 심플한 날씨 아이콘)
@@ -134,5 +133,15 @@
   - `styles.css`: 이미지 아이콘 스타일(.metric-icon-img) 추가 및 기존 스타일 제거
 - 검증 결과: 생성된 에셋 확인 및 코드 반영 완료 (`walkthrough.md` 참조)
 - 결정 사항: 전체 아이콘 및 일러스트를 이미지 에셋으로 교체하여 시각적 완성도 향상
-- 다음 액션: 사용자 UI 확인
+- 다음 액션: 투명 배경 개선 요구사항 반영
 - 참조 문서/커밋: /Users/sia/.gemini/antigravity/brain/bf4bf327-04d8-4e50-a885-b2896be70e36/implementation_plan.md, /Users/sia/.gemini/antigravity/brain/bf4bf327-04d8-4e50-a885-b2896be70e36/walkthrough.md
+
+## 2026-02-13 17:30 - [Deploy]
+- 요청/배경: GitHub 저장소에 현재 소스 코드 업로드
+- 수행 내용:
+  - 로컬 Git 리포지토리 초기화 및 원격 저장소(`https://github.com/devsisi-kim/weather.git`) 연결
+  - 전체 파일 커밋 ("Update design: 3D clothes and weather icons") 및 푸시
+- 검증 결과: 푸시 완료
+- 결정 사항: 투명 배경 수정 작업 중이었으나, 사용자 요청으로 우선 현재 상태를 업로드함.
+- 다음 액션: 투명 배경 수정 작업 재개 (또는 사용자 피드백 대기)
+- 참조 문서/커밋: https://github.com/devsisi-kim/weather.git

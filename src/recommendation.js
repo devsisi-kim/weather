@@ -4,7 +4,7 @@ export const OUTFIT_BANDS = [
     key: "hot",
     label: "민소매/반팔 + 반바지",
     image: "assets/clothes/hot.png",
-    items: ["민소매", "반팔", "반바지", "원피스"],
+    items: ["민소매", "반팔", "반바지", "린넨 옷"],
   },
   {
     min: 23,
@@ -18,35 +18,35 @@ export const OUTFIT_BANDS = [
     key: "mild",
     label: "긴팔/얇은 가디건",
     image: "assets/clothes/mild.png",
-    items: ["긴팔", "얇은 가디건", "청바지"],
+    items: ["긴팔", "얇은 가디건", "긴바지"],
   },
   {
     min: 17,
     key: "cool",
     label: "니트/맨투맨",
     image: "assets/clothes/cool.png",
-    items: ["얇은 니트", "맨투맨", "가디건", "청바지"],
+    items: ["얇은 니트", "맨투맨", "가디건", "긴바지"],
   },
   {
     min: 12,
     key: "chilly",
     label: "자켓/후드",
     image: "assets/clothes/chilly.png",
-    items: ["자켓", "후드", "면바지"],
+    items: ["자켓", "후드", "니트", "긴바지"],
   },
   {
     min: 9,
     key: "cold",
     label: "트렌치/야상",
     image: "assets/clothes/cold.png",
-    items: ["트렌치코트", "야상", "니트"],
+    items: ["자켓", "트렌치코트", "니트", "기모 바지"],
   },
   {
     min: 5,
     key: "very-cold",
-    label: "코트/가죽자켓",
+    label: "코트/히트텍",
     image: "assets/clothes/very-cold.png",
-    items: ["코트", "가죽자켓", "기모 바지"],
+    items: ["코트", "히트텍", "기모 바지"],
   },
   {
     min: -100,
@@ -82,8 +82,13 @@ export function recommendOutfit({
   }
 
   if (uvIndex >= 6) {
-    accessories.push("모자");
+    accessories.push("모자", "양산", "선글라스");
     notes.push("한낮 외출 시 모자를 권장합니다.");
+  }
+
+  if (uvIndex >= 10) {
+    accessories.push("모자", "양산", "선글라스");
+    notes.push("한낮 외출을 자제하세요");
   }
 
   if (precipitationProbability >= 50 || precipitationMm >= 0.2) {
@@ -106,12 +111,12 @@ export function recommendOutfit({
     (typeof airQualityIndex === "number" && airQualityIndex >= 80)
   ) {
     accessories.push("마스크");
-    notes.push("대기질이 좋지 않아 마스크 착용을 권장합니다.");
+    notes.push("대기질이 좋지 않습니다.");
   }
 
   if (typeof temperatureRange === "number" && temperatureRange >= 10) {
     accessories.push("머플러");
-    notes.push("일교차가 커서 보온용 소품이 필요할 수 있습니다.");
+    notes.push("일교차가 큽니다.");
   }
 
   return {

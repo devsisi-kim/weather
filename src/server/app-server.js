@@ -108,14 +108,14 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   endpoint.searchParams.set("longitude", String(longitude));
   endpoint.searchParams.set(
     "current",
-    "time,temperature_2m,relative_humidity_2m,uv_index,precipitation",
+    "temperature_2m,relative_humidity_2m,uv_index,precipitation",
   );
   endpoint.searchParams.set(
     "daily",
     "precipitation_probability_max,temperature_2m_max,temperature_2m_min",
   );
   endpoint.searchParams.set("hourly", "temperature_2m");
-  endpoint.searchParams.set("forecast_days", "1");
+  endpoint.searchParams.set("forecast_days", "2");
   endpoint.searchParams.set("timezone", "auto");
 
   const response = await fetchImpl(endpoint);
@@ -130,6 +130,10 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
 
   const temperatureRange = resolveTemperatureRange(data);
 
+  const tomorrowMax = data.daily.temperature_2m_max?.[1] ?? null;
+  const tomorrowMin = data.daily.temperature_2m_min?.[1] ?? null;
+  const tomorrowPrecip = data.daily.precipitation_probability_max?.[1] ?? null;
+
   return {
     tempC: data.current.temperature_2m,
     humidity: data.current.relative_humidity_2m,
@@ -142,6 +146,12 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
     airQualityIndex: null,
     updatedAt: data.current.time ?? new Date().toISOString(),
     timezone: data.timezone ?? null,
+    tomorrow: {
+      tempMax: tomorrowMax,
+      tempMin: tomorrowMin,
+      tempAvg: tomorrowMax != null && tomorrowMin != null ? Number(((tomorrowMax + tomorrowMin) / 2).toFixed(1)) : null,
+      precipitationProbability: tomorrowPrecip,
+    },
   };
 }
 
@@ -431,7 +441,19 @@ export function createWeatherServer({
             if (weatherSource === "fallback") {
               recommendation.notes.unshift("실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.");
             }
-            return { ...location, weather, recommendation };
+
+            let tomorrowRecommendation = null;
+            if (weather.tomorrow && weather.tomorrow.tempAvg != null) {
+              tomorrowRecommendation = recommendOutfit({
+                tempC: weather.tomorrow.tempAvg,
+                humidity: weather.humidity,
+                uvIndex: weather.uvIndex,
+                precipitationMm: 0,
+                precipitationProbability: weather.tomorrow.precipitationProbability ?? 0,
+              });
+            }
+
+            return { ...location, weather, recommendation, tomorrowRecommendation };
           }),
         );
 

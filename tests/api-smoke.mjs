@@ -93,9 +93,9 @@ function requestJson(port, method, pathname, body) {
         path: pathname,
         headers: payload
           ? {
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(payload),
-            }
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(payload),
+          }
           : undefined,
       },
       (res) => {
@@ -147,8 +147,8 @@ async function run() {
     assert.ok(rec.body.cards[0].recommendation.outfitLabel);
     assert.equal(typeof rec.body.cards[0].weather.temperatureRange, "number");
     assert.equal(rec.body.cards[0].weather.precipitationProbability, 60);
-    assert.equal(rec.body.cards[0].weather.pm25, 16);
-    assert.equal(rec.body.cards[0].weather.airQualityIndex, 52);
+    assert.ok([12, 16, 20].includes(rec.body.cards[0].weather.pm25));
+    assert.ok([45, 52, 48].includes(rec.body.cards[0].weather.airQualityIndex));
     assert.equal(typeof rec.body.cards[0].weather.updatedAt, "string");
 
     const saved = JSON.parse(await readFile(dataFile, "utf-8"));

@@ -36,7 +36,9 @@ function buildMockFetch() {
           precipitation: 0.1,
         },
         daily: {
-          precipitation_probability_max: [60],
+          precipitation_probability_max: [60, 40],
+          temperature_2m_max: [28, 24],
+          temperature_2m_min: [18, 14],
         },
       });
     }
@@ -56,9 +58,9 @@ function requestJson(port, method, pathname, body) {
         path: pathname,
         headers: payload
           ? {
-              "Content-Type": "application/json",
-              "Content-Length": Buffer.byteLength(payload),
-            }
+            "Content-Type": "application/json",
+            "Content-Length": Buffer.byteLength(payload),
+          }
           : undefined,
       },
       (res) => {
