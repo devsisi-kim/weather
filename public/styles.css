@@ -66,6 +66,19 @@ header {
   position: relative;
 }
 
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.header-content {
+  flex: 1;
+}
+
 .eyebrow {
   margin: 0;
   color: color-mix(in srgb, var(--primary-dark) 65%, var(--accent));
@@ -286,8 +299,7 @@ button[disabled] {
   display: flex;
   justify-content: center;
   gap: 8px;
-  margin-top: 8px;
-  margin-bottom: 12px;
+  margin: 0 0 4px;
 }
 
 .tab-btn {
@@ -630,6 +642,11 @@ button[disabled] {
 
   .app {
     padding: 18px 12px 30px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .panel,
