@@ -21,7 +21,10 @@
         <form id="location-form" class="location-form">
           <label for="location-input">위치 추가</label>
           <div class="row">
-            <input id="location-input" name="location" type="text" placeholder="예: Seoul, Tokyo" autocomplete="off" />
+            <div class="input-group">
+              <input id="location-input" name="location" type="text" placeholder="예: Seoul, Tokyo" autocomplete="off" />
+              <ul id="autocomplete-list" class="autocomplete-list" hidden></ul>
+            </div>
             <button type="submit" class="btn btn-primary">추가</button>
             <button id="refresh-button" type="button" class="btn btn-secondary">새로고침</button>
           </div>

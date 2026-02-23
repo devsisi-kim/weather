@@ -8,9 +8,34 @@ const statusEl = document.getElementById("status");
 const formEl = document.getElementById("location-form");
 const inputEl = document.getElementById("location-input");
 const refreshEl = document.getElementById("refresh-button");
+const autocompleteListEl = document.getElementById("autocomplete-list");
 
 formEl.addEventListener("submit", onAddLocation);
 refreshEl.addEventListener("click", refreshRecommendations);
+
+let searchTimeout = null;
+
+inputEl.addEventListener("input", (e) => {
+  const val = e.target.value.trim();
+  clearTimeout(searchTimeout);
+
+  if (!val) {
+    autocompleteListEl.hidden = true;
+    return;
+  }
+
+  // 1초 디바운스
+  searchTimeout = setTimeout(() => {
+    fetchSuggestions(val);
+  }, 1000);
+});
+
+// 외부 클릭 시 드롭다운 닫기
+document.addEventListener("click", (e) => {
+  if (!formEl.contains(e.target)) {
+    autocompleteListEl.hidden = true;
+  }
+});
 
 bootstrap();
 
@@ -39,6 +64,65 @@ async function loadLocations() {
 
 function saveToLocal() {
   localStorage.setItem("weather_locations", JSON.stringify(state.locations));
+}
+
+async function fetchSuggestions(query) {
+  try {
+    const endpoint = new URL("https://geocoding-api.open-meteo.com/v1/search");
+    endpoint.searchParams.set("name", query);
+    endpoint.searchParams.set("count", "5");
+    endpoint.searchParams.set("language", "en");
+
+    const response = await fetch(endpoint);
+    const data = await response.json();
+    const results = data?.results || [];
+
+    renderAutocomplete(results);
+  } catch (error) {
+    console.error("자동완성 조회 실패", error);
+  }
+}
+
+function renderAutocomplete(results) {
+  autocompleteListEl.innerHTML = "";
+  if (results.length === 0) {
+    autocompleteListEl.innerHTML = `<li class="empty-item">검색 결과가 없습니다.</li>`;
+  } else {
+    results.forEach((item) => {
+      const li = document.createElement("li");
+      const sub = item.admin1 || item.country || "";
+      li.textContent = `${item.name}${sub ? `, ${sub}` : ""}`;
+
+      li.addEventListener("click", () => {
+        addLocationFromSuggestion(item);
+      });
+      autocompleteListEl.appendChild(li);
+    });
+  }
+  autocompleteListEl.hidden = false;
+}
+
+async function addLocationFromSuggestion(item) {
+  autocompleteListEl.hidden = true;
+  inputEl.value = "";
+
+  if (state.locations.length >= 2) {
+    updateStatus("위치는 최대 2개까지만 저장할 수 있습니다.", "error");
+    return;
+  }
+
+  const next = {
+    id: crypto.randomUUID(),
+    name: item.name,
+    latitude: item.latitude,
+    longitude: item.longitude,
+  };
+
+  state.locations.push(next);
+  saveToLocal();
+  renderLocationTags();
+  updateStatus("위치 추가 완료", "ok");
+  await refreshRecommendations();
 }
 
 async function onAddLocation(event) {
