@@ -16,9 +16,9 @@ test("UV 높고 비 확률이 높으면 모자/선크림/우산 추천", () => {
     precipitationProbability: 80,
   });
 
-  assert.ok(result.accessories.includes("선크림"));
-  assert.ok(result.accessories.includes("모자"));
-  assert.ok(result.accessories.includes("우산"));
+  assert.ok(result.accessories.some(a => a.name === "선크림"));
+  assert.ok(result.accessories.some(a => a.name === "모자"));
+  assert.ok(result.accessories.some(a => a.name === "우산"));
 });
 
 test("저온에서는 보온 소품을 추천", () => {
@@ -30,7 +30,7 @@ test("저온에서는 보온 소품을 추천", () => {
     precipitationProbability: 0,
   });
 
-  assert.ok(result.accessories.includes("목도리"));
-  assert.ok(result.accessories.includes("장갑"));
+  assert.ok(result.accessories.some(a => a.name === "목도리"));
+  assert.ok(result.accessories.some(a => a.name === "장갑"));
   assert.equal(result.outfitLabel, "패딩/두꺼운 코트");
 });

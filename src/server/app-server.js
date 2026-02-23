@@ -439,7 +439,12 @@ export function createWeatherServer({
             weather.updatedAt = weather.updatedAt || new Date().toISOString();
             const recommendation = recommendOutfit(weather);
             if (weatherSource === "fallback") {
-              recommendation.notes.unshift("실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.");
+              const fallbackMsg = "실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.";
+              if (recommendation.items && recommendation.items.length > 0) {
+                recommendation.items[0].note = recommendation.items[0].note
+                  ? fallbackMsg + " " + recommendation.items[0].note
+                  : fallbackMsg;
+              }
             }
 
             let tomorrowRecommendation = null;

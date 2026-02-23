@@ -134,43 +134,88 @@ function renderCards() {
       const humidityMetric = getMetricByHumidity(weather.humidity);
       const uvMetric = getMetricByUv(weather.uvIndex);
 
+      const mainWeatherIcon = getWeatherIcon(weather.weatherDescription);
+
       return `
       <article class="card">
-        <h2>${entry.name}</h2>
-        <div class="metrics-grid">
-          <div class="metric-item">
-            <img src="${tempMetric.image}" alt="Temperature" class="metric-icon-img" />
-            <span class="metric-text"><strong>기온 ${formatNum(weather.tempC)}°C</strong><span>${tempMetric.label}</span></span>
-          </div>
-          <div class="metric-item">
-            <img src="${humidityMetric.image}" alt="Humidity" class="metric-icon-img" />
-            <span class="metric-text"><strong>습도 ${weather.humidity}%</strong><span>${humidityMetric.label}</span></span>
-          </div>
-          <div class="metric-item">
-            <img src="${uvMetric.image}" alt="UV Index" class="metric-icon-img" />
-            <span class="metric-text"><strong>UV ${formatNum(weather.uvIndex)}</strong><span>${uvMetric.label}</span></span>
+        <div class="card-header">
+          <img src="assets/weather/${mainWeatherIcon}" alt="Weather Icon" class="main-weather-icon" />
+          <div class="card-header-info">
+            <h2>${entry.name}</h2>
+            <div class="temp-display">${formatNum(weather.tempC)}°C</div>
+            <div class="condition-label">${tempMetric.label}</div>
           </div>
         </div>
-        <p class="metrics">강수확률 ${weather.precipitationProbability}%</p>
-        <p class="metrics">일교차 ${rangeLabel || "미확인"}</p>
-        <p class="metrics">대기질 ${airQualityMessage}</p>
-        <p class="metrics">데이터 소스: ${weather.source === "fallback" ? `임시 데이터 (${weather.sourceMessage || "연결 실패"})` : "실시간 API"}</p>
-        <p class="metrics">갱신 시각: ${formatWeatherTimestamp(weather.updatedAt, weather.timezone)}</p>
+        <div class="metrics-row">
+          <div class="metric-mini">
+            <img src="assets/icons/humidity.svg" alt="Humidity" class="metric-mini-icon" />
+            <div class="metric-mini-data">
+              <span class="metric-mini-label">Humidity</span>
+              <span class="metric-mini-value"><strong>${weather.humidity}%</strong> <span class="humidity-state">${humidityMetric.label.split(":")[0]}</span></span>
+            </div>
+          </div>
+          <div class="metric-mini">
+            <img src="assets/icons/uv.svg" alt="UV" class="metric-mini-icon" />
+            <div class="metric-mini-data">
+              <span class="metric-mini-label">UV: ${formatNum(weather.uvIndex)}</span>
+              <span class="metric-mini-value"><span class="uv-state">${uvMetric.label.split(":")[0]}</span></span>
+            </div>
+          </div>
+          <div class="metric-mini">
+            <img src="assets/icons/pm25.svg" alt="PM2.5" class="metric-mini-icon" />
+            <div class="metric-mini-data">
+              <span class="metric-mini-label">PM2.5</span>
+              <span class="metric-mini-value"><strong>${typeof weather.pm25 === "number" ? formatNum(weather.pm25) : "-"}</strong></span>
+            </div>
+          </div>
+          <div class="metric-mini">
+            <img src="assets/icons/pm10.svg" alt="PM10" class="metric-mini-icon" />
+            <div class="metric-mini-data">
+              <span class="metric-mini-label">PM10</span>
+              <span class="metric-mini-value"><strong>${typeof weather.pm10 === "number" ? formatNum(weather.pm10) : "-"}</strong></span>
+            </div>
+          </div>
+          <div class="metric-mini">
+            <img src="assets/icons/aqi.svg" alt="AQI" class="metric-mini-icon" />
+            <div class="metric-mini-data">
+              <span class="metric-mini-label">US-AQI</span>
+              <span class="metric-mini-value"><strong>${typeof weather.airQualityIndex === "number" ? formatNum(weather.airQualityIndex) : "-"}</strong></span>
+            </div>
+          </div>
+        </div>
+        <p class="metrics-sub">강수확률: ${weather.precipitationProbability}%, 일교차: ${rangeLabel || "미확인"}</p>
+        <p class="metrics-sub">데이터: ${weather.source === "fallback" ? `임시 (${weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt, weather.timezone)})</p>
+        <hr class="divider"/>
+        <h3 class="section-title">Today's Outfit</h3>
         <div class="recommendation">
           <img src="${recommendation.image}" alt="${recommendation.outfitLabel}" class="outfit-image" />
-          <div>
-            <p class="outfit-title">${recommendation.outfitLabel}</p>
-            <p class="outfit-items">${recommendation.items.join(", ")}</p>
+          <div class="outfit-details">
+            <div class="outfit-main-items">
+              ${recommendation.items.map((item, index) => `<span class="outfit-item tooltip-container">${item.name}${item.note ? `<span class="tooltip">${item.note}</span>` : ''}</span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`).join("")}
+            </div>
+            ${recommendation.accessories.length > 0 ? `
+            <div class="accessories-section">
+              <p class="outfit-category">Accessories</p>
+              <ul class="checklist">
+                ${recommendation.accessories.map((acc) => `<li class="tooltip-container"><span class="check-icon">✓</span> ${acc.name}${acc.note ? `<span class="tooltip">${acc.note}</span>` : ''}</li>`).join("")}
+              </ul>
+            </div>
+            ` : ''}
           </div>
         </div>
-        <p class="accessories"><strong>소품:</strong> ${recommendation.accessories.length ? recommendation.accessories.join(", ") : "선택 없음"}</p>
-        <ul class="notes">
-          ${recommendation.notes.map((note) => `<li>${note}</li>`).join("") || "<li>현재 조건에서 기본 복장을 권장합니다.</li>"}
-        </ul>
       </article>
-      `;
+        `;
     })
     .join("");
+}
+
+function getWeatherIcon(description) {
+  if (!description) return "sunny.png";
+  const desc = description.toLowerCase();
+  if (desc.includes("rain")) return "rainy.png";
+  if (desc.includes("snow") || desc.includes("ice")) return "snowy.png";
+  if (desc.includes("cloud") || desc.includes("overcast")) return "cloudy.png";
+  return "sunny.png";
 }
 
 function getMetricByTemperature(tempC) {
@@ -221,9 +266,9 @@ function formatNum(value) {
 
 function buildAirQualityLabel(pm25, pm10, airQualityIndex) {
   const values = [];
-  if (typeof pm25 === "number") values.push(`PM2.5 ${formatNum(pm25)}`);
-  if (typeof pm10 === "number") values.push(`PM10 ${formatNum(pm10)}`);
-  if (typeof airQualityIndex === "number") values.push(`US-AQI ${formatNum(airQualityIndex)}`);
+  if (typeof pm25 === "number") values.push(`PM2.5 ${formatNum(pm25)} `);
+  if (typeof pm10 === "number") values.push(`PM10 ${formatNum(pm10)} `);
+  if (typeof airQualityIndex === "number") values.push(`US - AQI ${formatNum(airQualityIndex)} `);
 
   return values.length ? values.join(" / ") : "데이터 미제공";
 }
@@ -247,5 +292,5 @@ function formatWeatherTimestamp(timeString, timezone) {
 
 function updateStatus(message, type = "") {
   statusEl.textContent = message;
-  statusEl.className = `status ${type}`.trim();
+  statusEl.className = `status ${type} `.trim();
 }

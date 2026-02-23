@@ -73,36 +73,40 @@ export function recommendOutfit({
   airQualityIndex,
 }) {
   const band = selectTemperatureBand(tempC);
-  const accessories = [];
-  const notes = [];
+  const accessoriesMap = new Map();
+  const addAccessory = (name, note) => {
+    if (!accessoriesMap.has(name)) accessoriesMap.set(name, note);
+  };
+
+  const outfitNotes = [];
 
   if (uvIndex >= 3) {
-    accessories.push("선크림");
-    notes.push("UV가 높아 자외선 차단이 필요합니다.");
+    addAccessory("선크림", "UV가 높아 자외선 차단이 필요합니다.");
   }
 
   if (uvIndex >= 6) {
-    accessories.push("모자", "양산", "선글라스");
-    notes.push("한낮 외출 시 모자를 권장합니다.");
+    addAccessory("모자", "한낮 외출 시 모자를 권장합니다.");
+    addAccessory("양산", "한낮 외출 시 양산을 권장합니다.");
+    addAccessory("선글라스", "한낮 외출 시 선글라스를 권장합니다.");
   }
 
   if (uvIndex >= 10) {
-    accessories.push("모자", "양산", "선글라스");
-    notes.push("한낮 외출을 자제하세요");
+    addAccessory("모자", "한낮 외출을 자제하세요.");
+    addAccessory("양산", "한낮 외출을 자제하세요.");
+    addAccessory("선글라스", "한낮 외출을 자제하세요.");
   }
 
   if (precipitationProbability >= 50 || precipitationMm >= 0.2) {
-    accessories.push("우산");
-    notes.push("강수 가능성이 있어 우산을 챙기세요.");
+    addAccessory("우산", "강수 가능성이 있어 우산을 챙기세요.");
   }
 
   if (tempC <= 8) {
-    accessories.push("목도리", "장갑");
-    notes.push("기온이 낮아 보온 소품이 필요합니다.");
+    addAccessory("목도리", "기온이 낮아 보온 소품이 필요합니다.");
+    addAccessory("장갑", "기온이 낮아 보온 소품이 필요합니다.");
   }
 
   if (humidity >= 80 && tempC >= 23) {
-    notes.push("습도가 높아 통기성 좋은 소재를 권장합니다.");
+    outfitNotes.push("습도가 높아 통기성 좋은 소재를 권장합니다.");
   }
 
   if (
@@ -110,20 +114,20 @@ export function recommendOutfit({
     (typeof pm10 === "number" && pm10 >= 80) ||
     (typeof airQualityIndex === "number" && airQualityIndex >= 80)
   ) {
-    accessories.push("마스크");
-    notes.push("대기질이 좋지 않습니다.");
+    addAccessory("마스크", "대기질이 좋지 않습니다.");
   }
 
   if (typeof temperatureRange === "number" && temperatureRange >= 10) {
-    accessories.push("머플러");
-    notes.push("일교차가 큽니다.");
+    addAccessory("머플러", "일교차가 큽니다.");
   }
+
+  const itemsWithNotes = band.items.map(item => ({ name: item, note: outfitNotes.join(" ") || null }));
+  const accessoriesWithNotes = Array.from(accessoriesMap.entries()).map(([name, note]) => ({ name, note }));
 
   return {
     outfitLabel: band.label,
     image: band.image,
-    items: band.items,
-    accessories: [...new Set(accessories)],
-    notes,
+    items: itemsWithNotes,
+    accessories: accessoriesWithNotes,
   };
 }
