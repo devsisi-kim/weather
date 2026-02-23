@@ -21,18 +21,25 @@ async function bootstrap() {
 
 async function loadLocations() {
   try {
-    const response = await fetch("/api/locations");
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "위치 목록 조회에 실패했습니다.");
+    const saved = localStorage.getItem("weather_locations");
+    if (saved) {
+      state.locations = JSON.parse(saved);
+    } else {
+      // Default fallback if empty
+      state.locations = [
+        { id: "default-1", name: "Seoul", latitude: 37.5665, longitude: 126.978 },
+        { id: "default-2", name: "Tokyo", latitude: 35.6895, longitude: 139.69171 }
+      ];
+      saveToLocal();
     }
-
-    state.locations = data.locations;
     renderLocationTags();
   } catch (error) {
-    updateStatus(error.message || "위치 목록 조회 실패", "error");
+    updateStatus("로컬 위치 목록 조회 실패", "error");
   }
+}
+
+function saveToLocal() {
+  localStorage.setItem("weather_locations", JSON.stringify(state.locations));
 }
 
 async function onAddLocation(event) {
@@ -40,20 +47,35 @@ async function onAddLocation(event) {
   const query = inputEl.value.trim();
   if (!query) return;
 
-  try {
-    updateStatus("위치 추가 중...", "loading");
-    const response = await fetch("/api/locations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
-    });
-    const data = await response.json();
+  if (state.locations.length >= 2) {
+    updateStatus("위치는 최대 2개까지만 저장할 수 있습니다.", "error");
+    return;
+  }
 
-    if (!response.ok) {
-      throw new Error(data.message || "위치 추가에 실패했습니다.");
+  try {
+    updateStatus("위치 검색 중...", "loading");
+    const endpoint = new URL("https://geocoding-api.open-meteo.com/v1/search");
+    endpoint.searchParams.set("name", query);
+    endpoint.searchParams.set("count", "1");
+    endpoint.searchParams.set("language", "en");
+
+    const response = await fetch(endpoint);
+    const data = await response.json();
+    const first = data?.results?.[0];
+
+    if (!first) {
+      throw new Error("위치를 찾지 못했습니다.");
     }
 
-    state.locations = data.locations;
+    const next = {
+      id: crypto.randomUUID(),
+      name: first.name,
+      latitude: first.latitude,
+      longitude: first.longitude,
+    };
+
+    state.locations.push(next);
+    saveToLocal();
     renderLocationTags();
     inputEl.value = "";
     updateStatus("위치 추가 완료", "ok");
@@ -64,20 +86,10 @@ async function onAddLocation(event) {
 }
 
 async function removeLocation(id) {
-  try {
-    const response = await fetch(`/api/locations/${id}`, { method: "DELETE" });
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || "위치 삭제에 실패했습니다.");
-    }
-
-    state.locations = data.locations;
-    renderLocationTags();
-    await refreshRecommendations();
-  } catch (error) {
-    updateStatus(error.message || "위치 삭제 실패", "error");
-  }
+  state.locations = state.locations.filter(loc => loc.id !== id);
+  saveToLocal();
+  renderLocationTags();
+  await refreshRecommendations();
 }
 
 function renderLocationTags() {
@@ -102,7 +114,19 @@ function renderLocationTags() {
 async function refreshRecommendations() {
   try {
     updateStatus("날씨 및 추천 갱신 중...", "loading");
-    const response = await fetch("/api/recommendations");
+
+    if (state.locations.length === 0) {
+      state.cards = [];
+      renderCards();
+      updateStatus("위치를 추가해주세요.", "ok");
+      return;
+    }
+
+    const response = await fetch("/api/recommendations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ locations: state.locations }),
+    });
     const data = await response.json();
 
     if (!response.ok) {
