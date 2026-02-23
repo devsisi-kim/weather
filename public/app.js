@@ -1,6 +1,7 @@
 const state = {
   locations: [],
   cards: [],
+  dateFilter: "today"
 };
 
 const locationsEl = document.getElementById("locations");
@@ -11,9 +12,14 @@ const refreshEl = document.getElementById("refresh-button");
 const autocompleteListEl = document.getElementById("autocomplete-list");
 const cardsEl = document.getElementById("cards");
 const applyButtonEl = document.getElementById("apply-button");
+const tabTodayEl = document.getElementById("date-tab-today");
+const tabTomorrowEl = document.getElementById("date-tab-tomorrow");
 
 formEl.addEventListener("submit", onAddLocation);
 refreshEl.addEventListener("click", refreshRecommendations);
+
+tabTodayEl.addEventListener("click", () => setDateFilter("today"));
+tabTomorrowEl.addEventListener("click", () => setDateFilter("tomorrow"));
 
 let searchTimeout = null;
 
@@ -52,6 +58,7 @@ bootstrap();
 async function bootstrap() {
   await loadLocations();
   await refreshRecommendations();
+  setDateFilter(state.dateFilter); // Initialize tab state
 }
 
 async function loadLocations() {
@@ -70,6 +77,18 @@ async function loadLocations() {
   } catch (error) {
     updateStatus("로컬 위치 목록 조회 실패", "error");
   }
+}
+
+function setDateFilter(filter) {
+  state.dateFilter = filter;
+  if (filter === "today") {
+    tabTodayEl.classList.add("active");
+    tabTomorrowEl.classList.remove("active");
+  } else {
+    tabTomorrowEl.classList.add("active");
+    tabTodayEl.classList.remove("active");
+  }
+  renderCards();
 }
 
 function saveToLocal() {
@@ -246,11 +265,17 @@ function renderCards() {
 
   cardsEl.innerHTML = state.cards
     .map((entry) => {
-      const { weather, recommendation } = entry;
+      const isTomorrow = state.dateFilter === "tomorrow";
+      const weather = isTomorrow && entry.weather.tomorrow ? entry.weather.tomorrow : entry.weather;
+      const recommendation = isTomorrow && entry.tomorrowRecommendation ? entry.tomorrowRecommendation : entry.recommendation;
+
+      const displayTemp = isTomorrow ? weather.tempAvg : weather.tempC;
+      const displayHumidity = weather.humidity ?? entry.weather.humidity ?? 0;
+
       const airQualityMessage = buildAirQualityLabel(weather.pm25, weather.pm10, weather.airQualityIndex);
       const rangeLabel = typeof weather.temperatureRange === "number" ? `${formatNum(weather.temperatureRange)}°C` : null;
-      const tempMetric = getMetricByTemperature(weather.tempC);
-      const humidityMetric = getMetricByHumidity(weather.humidity);
+      const tempMetric = getMetricByTemperature(displayTemp);
+      const humidityMetric = getMetricByHumidity(displayHumidity);
       const uvMetric = getMetricByUv(weather.uvIndex);
 
       const mainWeatherIcon = getWeatherIcon(weather.weatherDescription);
@@ -261,7 +286,7 @@ function renderCards() {
           <img src="assets/weather/${mainWeatherIcon}" alt="Weather Icon" class="main-weather-icon" />
           <div class="card-header-info">
             <h2>${entry.name}</h2>
-            <div class="temp-display">${formatNum(weather.tempC)}°C</div>
+            <div class="temp-display">${displayTemp != null ? formatNum(displayTemp) : "-"}°C</div>
             <div class="condition-label">${tempMetric.label}</div>
           </div>
         </div>
@@ -270,7 +295,7 @@ function renderCards() {
             <img src="assets/icons/humidity.svg" alt="Humidity" class="metric-mini-icon" />
             <div class="metric-mini-data">
               <span class="metric-mini-label">Humidity</span>
-              <span class="metric-mini-value"><strong>${weather.humidity}%</strong> <span class="humidity-state">${humidityMetric.label.split(":")[0]}</span></span>
+              <span class="metric-mini-value"><strong>${formatNum(displayHumidity)}%</strong> <span class="humidity-state">${humidityMetric.label.split(":")[0]}</span></span>
             </div>
           </div>
           <div class="metric-mini">
@@ -302,11 +327,11 @@ function renderCards() {
             </div>
           </div>
         </div>
-        <p class="metrics-sub">강수확률: ${weather.precipitationProbability}%, 일교차: ${rangeLabel || "미확인"}</p>
+        <p class="metrics-sub">강수확률: ${weather.precipitationProbability != null ? weather.precipitationProbability : "미확인"}%, 일교차: ${rangeLabel || "미확인"}</p>
         <p class="metrics-sub">데이터: ${weather.source === "fallback" ? `임시 (${weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt, weather.timezone)})</p>
         <hr class="divider"/>
-        <h3 class="section-title">Today's Outfit</h3>
-        <div class="recommendation">
+        <h3 class="section-title">${isTomorrow ? "Tomorrow's" : "Today's"} Outfit</h3>
+        <div class="outfit-recommendation">
           <img src="${recommendation.image}" alt="${recommendation.outfitLabel}" class="outfit-image" />
           <div class="outfit-details">
             <div class="outfit-main-items">

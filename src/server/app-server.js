@@ -63,7 +63,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   );
   endpoint.searchParams.set(
     "daily",
-    "precipitation_probability_max,temperature_2m_max,temperature_2m_min",
+    "precipitation_probability_max,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum",
   );
   endpoint.searchParams.set("hourly", "temperature_2m");
   endpoint.searchParams.set("forecast_days", "2");
@@ -83,7 +83,13 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
 
   const tomorrowMax = data.daily.temperature_2m_max?.[1] ?? null;
   const tomorrowMin = data.daily.temperature_2m_min?.[1] ?? null;
-  const tomorrowPrecip = data.daily.precipitation_probability_max?.[1] ?? null;
+  const tomorrowPrecipProb = data.daily.precipitation_probability_max?.[1] ?? null;
+  const tomorrowUv = data.daily.uv_index_max?.[1] ?? null;
+  const tomorrowPrecipMm = data.daily.precipitation_sum?.[1] ?? null;
+  const tomorrowTempRange =
+    tomorrowMax != null && tomorrowMin != null
+      ? Number((tomorrowMax - tomorrowMin).toFixed(1))
+      : null;
 
   return {
     tempC: data.current.temperature_2m,
@@ -101,7 +107,10 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
       tempMax: tomorrowMax,
       tempMin: tomorrowMin,
       tempAvg: tomorrowMax != null && tomorrowMin != null ? Number(((tomorrowMax + tomorrowMin) / 2).toFixed(1)) : null,
-      precipitationProbability: tomorrowPrecip,
+      precipitationProbability: tomorrowPrecipProb,
+      uvIndex: tomorrowUv,
+      precipitationMm: tomorrowPrecipMm,
+      temperatureRange: tomorrowTempRange,
     },
   };
 }
@@ -366,10 +375,11 @@ export default async function handler(req, res) {
           if (weather.tomorrow && weather.tomorrow.tempAvg != null) {
             tomorrowRecommendation = recommendOutfit({
               tempC: weather.tomorrow.tempAvg,
-              humidity: weather.humidity,
-              uvIndex: weather.uvIndex,
-              precipitationMm: 0,
+              humidity: weather.humidity, // 내일 습도는 알 수 없으므로 오늘 습도를 임의로(또는 기본값) 유지
+              uvIndex: weather.tomorrow.uvIndex ?? 0,
+              precipitationMm: weather.tomorrow.precipitationMm ?? 0,
               precipitationProbability: weather.tomorrow.precipitationProbability ?? 0,
+              temperatureRange: weather.tomorrow.temperatureRange ?? null,
             });
           }
 
