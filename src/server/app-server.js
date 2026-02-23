@@ -346,131 +346,145 @@ async function serveStatic(req, res) {
   }
 }
 
-export function createWeatherServer({
-  dataFile = path.resolve(PROJECT_ROOT, "data", "locations.json"),
-  fetchImpl = fetch,
-} = {}) {
-  const server = http.createServer(async (req, res) => {
-    const method = req.method || "GET";
-    const urlPath = req.url || "/";
+export default async function handler(req, res) {
+  const method = req.method || "GET";
+  const urlPath = req.url || "/";
+  const dataFile = path.resolve(process.cwd(), "data", "locations.json");
 
-    try {
-      if (urlPath === "/api/health" && method === "GET") {
-        json(res, 200, { ok: true });
+  // Vercel 환경에서는 /data 작성이 불가능할 수 있으므로 읽기 전용으로 fallback
+  const fetchImpl = fetch;
+
+  try {
+    if (urlPath === "/api/health" && method === "GET") {
+      json(res, 200, { ok: true });
+      return;
+    }
+
+    if (urlPath === "/api/locations" && method === "GET") {
+      const locations = await loadLocations(dataFile);
+      json(res, 200, { locations });
+      return;
+    }
+
+    if (urlPath === "/api/locations" && method === "POST") {
+      const body = await parseRequestBody(req);
+      const query = String(body.query || "").trim();
+
+      if (!query) {
+        json(res, 400, { message: "query 값이 필요합니다." });
         return;
       }
 
-      if (urlPath === "/api/locations" && method === "GET") {
-        const locations = await loadLocations(dataFile);
-        json(res, 200, { locations });
+      const locations = await loadLocations(dataFile);
+      if (locations.length >= 2) {
+        json(res, 400, { message: "위치는 최대 2개까지만 저장할 수 있습니다." });
         return;
       }
 
-      if (urlPath === "/api/locations" && method === "POST") {
-        const body = await parseRequestBody(req);
-        const query = String(body.query || "").trim();
-
-        if (!query) {
-          json(res, 400, { message: "query 값이 필요합니다." });
-          return;
-        }
-
-        const locations = await loadLocations(dataFile);
-        if (locations.length >= 2) {
-          json(res, 400, { message: "위치는 최대 2개까지만 저장할 수 있습니다." });
-          return;
-        }
-
-        const next = await geocodeLocation(fetchImpl, query);
-        locations.push(next);
+      const next = await geocodeLocation(fetchImpl, query);
+      locations.push(next);
+      try {
         await saveLocations(dataFile, locations);
-        json(res, 201, { location: next, locations });
-        return;
+      } catch (e) {
+        console.warn("Vercel Read-only FS: Failed to save location.");
       }
+      json(res, 201, { location: next, locations });
+      return;
+    }
 
-      if (urlPath.startsWith("/api/locations/") && method === "DELETE") {
-        const id = urlPath.split("/").pop();
-        const locations = await loadLocations(dataFile);
-        const filtered = locations.filter((item) => item.id !== id);
+    if (urlPath.startsWith("/api/locations/") && method === "DELETE") {
+      const id = urlPath.split("/").pop();
+      const locations = await loadLocations(dataFile);
+      const filtered = locations.filter((item) => item.id !== id);
 
+      try {
         await saveLocations(dataFile, filtered);
-        json(res, 200, { locations: filtered });
-        return;
+      } catch (e) {
+        console.warn("Vercel Read-only FS: Failed to save location.");
       }
+      json(res, 200, { locations: filtered });
+      return;
+    }
 
-      if (urlPath === "/api/recommendations" && method === "GET") {
-        const locations = await loadLocations(dataFile);
-        const cards = await Promise.all(
-          locations.map(async (location) => {
-            let weather;
-            let weatherSource = "live";
+    // Vercel 에서는 /api/recommendations 로 들어올 수도 있고, rewrite 룰에 따라 바뀔 수도 있음
+    if (urlPath.includes("/api/recommendations") && method === "GET") {
+      const locations = await loadLocations(dataFile);
+      const cards = await Promise.all(
+        locations.map(async (location) => {
+          let weather;
+          let weatherSource = "live";
 
-            try {
-              weather = await fetchCurrentWeather(fetchImpl, location);
-            } catch (error) {
-              weather = buildFallbackWeather(error?.message || "외부 날씨 API 연결 실패");
-              weatherSource = "fallback";
-            }
+          try {
+            weather = await fetchCurrentWeather(fetchImpl, location);
+          } catch (error) {
+            weather = buildFallbackWeather(error?.message || "외부 날씨 API 연결 실패");
+            weatherSource = "fallback";
+          }
 
-            let airQuality = null;
-            if (weatherSource === "live") {
-              airQuality = await fetchAirQuality(fetchImpl, {
+          let airQuality = null;
+          if (weatherSource === "live") {
+            airQuality = await fetchAirQuality(fetchImpl, {
+              latitude: location.latitude,
+              longitude: location.longitude,
+              timezone: weather.timezone,
+            });
+            if (!airQuality) {
+              airQuality = await fetchAirQualityFromWaqi(fetchImpl, {
                 latitude: location.latitude,
                 longitude: location.longitude,
-                timezone: weather.timezone,
-              });
-              if (!airQuality) {
-                airQuality = await fetchAirQualityFromWaqi(fetchImpl, {
-                  latitude: location.latitude,
-                  longitude: location.longitude,
-                });
-              }
-            }
-
-            if (airQuality) {
-              weather.pm25 = airQuality.pm25;
-              weather.pm10 = airQuality.pm10;
-              weather.airQualityIndex = airQuality.airQualityIndex;
-            }
-
-            if (typeof weather.temperatureRange === "number") {
-              weather.temperatureRange = coerceTemperatureRange(weather.temperatureRange);
-            }
-            weather.updatedAt = weather.updatedAt || new Date().toISOString();
-            const recommendation = recommendOutfit(weather);
-            if (weatherSource === "fallback") {
-              const fallbackMsg = "실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.";
-              if (recommendation.items && recommendation.items.length > 0) {
-                recommendation.items[0].note = recommendation.items[0].note
-                  ? fallbackMsg + " " + recommendation.items[0].note
-                  : fallbackMsg;
-              }
-            }
-
-            let tomorrowRecommendation = null;
-            if (weather.tomorrow && weather.tomorrow.tempAvg != null) {
-              tomorrowRecommendation = recommendOutfit({
-                tempC: weather.tomorrow.tempAvg,
-                humidity: weather.humidity,
-                uvIndex: weather.uvIndex,
-                precipitationMm: 0,
-                precipitationProbability: weather.tomorrow.precipitationProbability ?? 0,
               });
             }
+          }
 
-            return { ...location, weather, recommendation, tomorrowRecommendation };
-          }),
-        );
+          if (airQuality) {
+            weather.pm25 = airQuality.pm25;
+            weather.pm10 = airQuality.pm10;
+            weather.airQualityIndex = airQuality.airQualityIndex;
+          }
 
-        json(res, 200, { cards, count: cards.length });
-        return;
-      }
+          if (typeof weather.temperatureRange === "number") {
+            weather.temperatureRange = coerceTemperatureRange(weather.temperatureRange);
+          }
+          weather.updatedAt = weather.updatedAt || new Date().toISOString();
+          const recommendation = recommendOutfit(weather);
+          if (weatherSource === "fallback") {
+            const fallbackMsg = "실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.";
+            if (recommendation.items && recommendation.items.length > 0) {
+              recommendation.items[0].note = recommendation.items[0].note
+                ? fallbackMsg + " " + recommendation.items[0].note
+                : fallbackMsg;
+            }
+          }
 
-      await serveStatic(req, res);
-    } catch (error) {
-      json(res, 500, { message: error?.message || "서버 오류가 발생했습니다." });
+          let tomorrowRecommendation = null;
+          if (weather.tomorrow && weather.tomorrow.tempAvg != null) {
+            tomorrowRecommendation = recommendOutfit({
+              tempC: weather.tomorrow.tempAvg,
+              humidity: weather.humidity,
+              uvIndex: weather.uvIndex,
+              precipitationMm: 0,
+              precipitationProbability: weather.tomorrow.precipitationProbability ?? 0,
+            });
+          }
+
+          return { ...location, weather, recommendation, tomorrowRecommendation };
+        }),
+      );
+
+      json(res, 200, { cards, count: cards.length });
+      return;
     }
-  });
 
-  return server;
+    json(res, 404, { message: "Not Found API route" });
+  } catch (error) {
+    json(res, 500, { message: error?.message || "서버 오류가 발생했습니다." });
+  }
+}
+
+// For local testing compatibility 
+export function createWeatherServer({
+  dataFile = path.resolve(process.cwd(), "data", "locations.json"),
+  fetchImpl = fetch,
+} = {}) {
+  return http.createServer((req, res) => handler(req, res));
 }
