@@ -27,8 +27,7 @@ async function loadLocations() {
     } else {
       // Default fallback if empty
       state.locations = [
-        { id: "default-1", name: "Seoul", latitude: 37.5665, longitude: 126.978 },
-        { id: "default-2", name: "Tokyo", latitude: 35.6895, longitude: 139.69171 }
+        { id: "default-1", name: "Seoul", latitude: 37.5665, longitude: 126.978 }
       ];
       saveToLocal();
     }
