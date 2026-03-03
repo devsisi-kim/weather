@@ -12,14 +12,15 @@ const refreshEl = document.getElementById("refresh-button");
 const autocompleteListEl = document.getElementById("autocomplete-list");
 const cardsEl = document.getElementById("cards");
 const applyButtonEl = document.getElementById("apply-button");
-const tabTodayEl = document.getElementById("date-tab-today");
-const tabTomorrowEl = document.getElementById("date-tab-tomorrow");
+const toggleBtnEl = document.getElementById("date-toggle-btn");
 
 formEl.addEventListener("submit", onAddLocation);
 refreshEl.addEventListener("click", refreshRecommendations);
 
-tabTodayEl.addEventListener("click", () => setDateFilter("today"));
-tabTomorrowEl.addEventListener("click", () => setDateFilter("tomorrow"));
+toggleBtnEl.addEventListener("click", () => {
+  const newFilter = state.dateFilter === "today" ? "tomorrow" : "today";
+  setDateFilter(newFilter);
+});
 
 let searchTimeout = null;
 
@@ -82,11 +83,11 @@ async function loadLocations() {
 function setDateFilter(filter) {
   state.dateFilter = filter;
   if (filter === "today") {
-    tabTodayEl.classList.add("active");
-    tabTomorrowEl.classList.remove("active");
+    toggleBtnEl.textContent = "오늘";
+    toggleBtnEl.classList.remove("tomorrow");
   } else {
-    tabTomorrowEl.classList.add("active");
-    tabTodayEl.classList.remove("active");
+    toggleBtnEl.textContent = "내일";
+    toggleBtnEl.classList.add("tomorrow");
   }
   renderCards();
 }

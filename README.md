@@ -6,6 +6,8 @@
 ## 최신 제품 형상 (Current Product Shape)
 - 위치 1~2개를 저장하고 각 위치별 추천 카드를 동시에 보여줍니다.
 - 추천 카드에는 기온/습도/UV 구간 라벨 + 아이콘, 강수확률, 일교차, 대기질, 갱신 시각이 표시됩니다.
+- 화면 상단의 **단일 토글 버튼**으로 '오늘'과 '내일'의 날씨 데이터 및 추천을 쉽게 전환할 수 있습니다.
+- 추천된 옷차림/소품 아이템에 **툴팁(Tooltip)**을 적용하여 추가적인 안내를 제공합니다.
 - 의상 일러스트는 `assets/clothes/*.png`/`assets/clothes/*.svg` 자산을 사용합니다.
 - 데이터 소스 상태를 카드에 노출합니다.
   - `실시간 API`
@@ -52,6 +54,11 @@ HOST=127.0.0.1 PORT=8080 WAQI_TOKEN=your_token npm start
 cd "/Users/sia/Documents/New project"
 npm start
 ```
+
+> **참고**: `package.json`의 `start` 명렁어는 `npx vercel dev`를 실행합니다. 
+> Vercel 로컬 서버의 경우 **`3000`번 포트**를 기본으로 사용합니다. (`http://localhost:3000`)
+> 만약 Vercel 로그인이 안 되어 있거나 연결된 프로젝트가 없다면 터미널에서 프로프트 입력 대기 상태에 머물러 있을 수 있습니다.
+> 순수 Node.js(Express) 모드로 바로 띄우려면 `node server.js`를 실행하세요.
 
 서버 시작 로그 예시:
 ```text
