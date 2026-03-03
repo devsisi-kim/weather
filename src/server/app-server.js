@@ -63,7 +63,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   );
   endpoint.searchParams.set(
     "daily",
-    "precipitation_probability_max,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum",
+    "precipitation_probability_max,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,weather_code",
   );
   endpoint.searchParams.set("hourly", "temperature_2m");
   endpoint.searchParams.set("forecast_days", "2");
@@ -91,6 +91,9 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
       ? Number((tomorrowMax - tomorrowMin).toFixed(1))
       : null;
 
+  const todayWeatherCode = data.daily.weather_code?.[0] ?? null;
+  const tomorrowWeatherCode = data.daily.weather_code?.[1] ?? null;
+
   return {
     tempC: data.current.temperature_2m,
     humidity: data.current.relative_humidity_2m,
@@ -98,6 +101,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
     precipitationMm: data.current.precipitation,
     precipitationProbability: data.daily.precipitation_probability_max?.[0] ?? 0,
     temperatureRange,
+    weatherDescription: weatherCodeToDescription(todayWeatherCode),
     pm25: null,
     pm10: null,
     airQualityIndex: null,
@@ -111,8 +115,30 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
       uvIndex: tomorrowUv,
       precipitationMm: tomorrowPrecipMm,
       temperatureRange: tomorrowTempRange,
+      weatherDescription: weatherCodeToDescription(tomorrowWeatherCode),
+      humidity: data.current.relative_humidity_2m, // 내일 시간별 습도 미제공 → 오늘값 유지
+      pm25: null,
+      pm10: null,
+      airQualityIndex: null,
+      updatedAt: data.current.time ?? new Date().toISOString(),
     },
   };
+}
+
+/**
+ * WMO Weather Code → 간략 설명 문자열
+ * https://open-meteo.com/en/docs#weathervariables
+ */
+function weatherCodeToDescription(code) {
+  if (code == null) return null;
+  if (code === 0) return "Clear sky";
+  if (code <= 3) return "Partly cloudy";
+  if (code <= 48) return "Cloudy";
+  if (code <= 67) return "Rain";
+  if (code <= 77) return "Snow";
+  if (code <= 82) return "Rain showers";
+  if (code <= 86) return "Snow showers";
+  return "Thunderstorm";
 }
 
 function resolveTemperatureRange(data) {
@@ -306,12 +332,9 @@ async function serveStatic(req, res) {
   }
 }
 
-export default async function handler(req, res) {
+async function innerHandler(req, res, fetchImpl) {
   const method = req.method || "GET";
   const urlPath = req.url || "/";
-
-  // Vercel 환경에서는 /data 작성이 불가능할 수 있으므로 읽기 전용으로 fallback
-  const fetchImpl = fetch;
 
   try {
     if (urlPath === "/api/health" && method === "GET") {
@@ -355,12 +378,19 @@ export default async function handler(req, res) {
             weather.pm25 = airQuality.pm25;
             weather.pm10 = airQuality.pm10;
             weather.airQualityIndex = airQuality.airQualityIndex;
+            // 내일 탭에도 오늘 대기질 데이터를 복사 (내일 예보 대기질은 미제공)
+            if (weather.tomorrow) {
+              weather.tomorrow.pm25 = airQuality.pm25;
+              weather.tomorrow.pm10 = airQuality.pm10;
+              weather.tomorrow.airQualityIndex = airQuality.airQualityIndex;
+            }
           }
 
           if (typeof weather.temperatureRange === "number") {
             weather.temperatureRange = coerceTemperatureRange(weather.temperatureRange);
           }
           weather.updatedAt = weather.updatedAt || new Date().toISOString();
+          weather.source = weatherSource;
           const recommendation = recommendOutfit(weather);
           if (weatherSource === "fallback") {
             const fallbackMsg = "실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.";
@@ -397,10 +427,15 @@ export default async function handler(req, res) {
   }
 }
 
+// Vercel Serverless 엔트리포인트 (실제 fetch 사용)
+export default async function handler(req, res) {
+  return innerHandler(req, res, fetch);
+}
+
 // For local testing compatibility 
 export function createWeatherServer({
   dataFile = path.resolve(process.cwd(), "data", "locations.json"),
   fetchImpl = fetch,
 } = {}) {
-  return http.createServer((req, res) => handler(req, res));
+  return http.createServer((req, res) => innerHandler(req, res, fetchImpl));
 }

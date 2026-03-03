@@ -337,20 +337,28 @@ function renderCards() {
           </div>
         </div>
         <p class="metrics-sub">강수확률: ${weather.precipitationProbability != null ? weather.precipitationProbability : "미확인"}%, 일교차: ${rangeLabel || "미확인"}</p>
-        <p class="metrics-sub">데이터: ${weather.source === "fallback" ? `임시 (${weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt, weather.timezone)})</p>
+        <p class="metrics-sub">데이터: ${entry.weather.source === "fallback" ? `임시 (${entry.weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt ?? entry.weather.updatedAt, entry.weather.timezone)})</p>
         <hr class="divider"/>
         <h3 class="section-title">${isTomorrow ? "Tomorrow's" : "Today's"} Outfit</h3>
         <div class="recommendation">
           <img src="${recommendation.image}" alt="${recommendation.outfitLabel}" class="outfit-image" />
           <div class="outfit-details">
             <div class="outfit-main-items">
-              ${recommendation.items.map((item, index) => `<span class="outfit-item">${item.name}</span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`).join("")}
+              ${recommendation.items.map((item, index) => {
+        const hasNote = item.note && item.note.trim();
+        return hasNote
+          ? `<span class="outfit-item tooltip-container">${item.name}<span class="tooltip">${item.note}</span></span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`
+          : `<span class="outfit-item">${item.name}</span>${index < recommendation.items.length - 1 ? '<span class="comma">, </span>' : ''}`;
+      }).join("")}
             </div>
             ${recommendation.accessories.length > 0 ? `
             <div class="accessories-section">
               <p class="outfit-category">Accessories</p>
               <ul class="checklist">
-                ${recommendation.accessories.map((acc) => `<li><span class="check-icon">✓</span> ${acc.name}</li>`).join("")}
+                ${recommendation.accessories.map((acc) => acc.note
+        ? `<li><span class="check-icon">✓</span> <span class="tooltip-container">${acc.name}<span class="tooltip">${acc.note}</span></span></li>`
+        : `<li><span class="check-icon">✓</span> ${acc.name}</li>`
+      ).join("")}
               </ul>
             </div>
             ` : ''}

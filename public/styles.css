@@ -622,7 +622,9 @@ button[disabled] {
   opacity: 0;
   transition: opacity 0.2s, visibility 0.2s;
   font-size: 0.8rem;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 200px;
+  width: max-content;
   pointer-events: none;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
