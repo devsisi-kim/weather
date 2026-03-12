@@ -44,6 +44,8 @@ function buildMockFetch() {
         },
         hourly: {
           temperature_2m: Array(48).fill(22),
+          uv_index: Array(48).fill(5),
+          time: Array.from({length: 48}, (_, i) => `2026-03-03T${String(i % 24).padStart(2, '0')}:00`)
         },
         timezone: "Asia/Seoul",
       });
@@ -161,6 +163,19 @@ test("tomorrow weatherDescription은 weather_code 61(비)에 맞게 Rain", async
 
     const tomorrow = response.body.cards[0].weather.tomorrow;
     assert.equal(tomorrow.weatherDescription, "Rain"); // weather_code[1] = 61 → Rain
+  });
+});
+
+test("오늘 날씨에 새로 추가된 기상 지표(tempMax/Min, uvMax/Peak)가 포함된다", async () => {
+  await withServer(buildMockFetch(), async ({ port }) => {
+    const locations = [{ id: "t1", name: "Seoul", latitude: 37.5, longitude: 127.0 }];
+    const response = await requestJson(port, "POST", "/api/recommendations", { locations });
+
+    const weather = response.body.cards[0].weather;
+    assert.ok(weather.tempMax != null, "오늘 tempMax 누락");
+    assert.ok(weather.tempMin != null, "오늘 tempMin 누락");
+    assert.ok(weather.uvMax != null, "오늘 uvMax 누락");
+    assert.ok(weather.uvPeakHour != null, "오늘 uvPeakHour 누락");
   });
 });
 

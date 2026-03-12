@@ -7,18 +7,39 @@ test("기온 30도는 고온 밴드를 선택", () => {
   assert.equal(band.key, "hot");
 });
 
-test("UV 높고 비 확률이 높으면 모자/선크림/우산 추천", () => {
+test("UV 높고 비 확률이 높으면 모자/선크림/우산 추천(현재 UV가 낮아도 uvMax가 높으면 발동)", () => {
   const result = recommendOutfit({
     tempC: 26,
     humidity: 70,
-    uvIndex: 7,
+    uvIndex: 1, // 야간 등 현재값이 낮은 상황 모사
+    uvMax: 7,   // 일중 최고는 높음
+    uvPeakHour: 14,
     precipitationMm: 0.0,
     precipitationProbability: 80,
+    lang: "ko"
   });
 
   assert.ok(result.accessories.some(a => a.name === "선크림"));
   assert.ok(result.accessories.some(a => a.name === "모자"));
   assert.ok(result.accessories.some(a => a.name === "우산"));
+});
+
+test("영어(en) 설정 시 악세사리 및 옷차림이 다국어 번역되어 반환된다", () => {
+  const result = recommendOutfit({
+    tempC: 26,
+    humidity: 70,
+    uvIndex: 1,
+    uvMax: 7,
+    uvPeakHour: 14,
+    precipitationMm: 0.0,
+    precipitationProbability: 80,
+    lang: "en"
+  });
+
+  assert.ok(result.accessories.some(a => a.name === "Sunscreen"));
+  assert.ok(result.accessories.some(a => a.name === "Hat"));
+  assert.ok(result.accessories.some(a => a.name === "Umbrella"));
+  assert.ok(result.outfitLabel === "Sleeveless/Shorts" || result.outfitLabel === "Short-sleeve + Light shirt");
 });
 
 test("저온에서는 보온 소품을 추천", () => {

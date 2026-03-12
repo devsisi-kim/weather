@@ -1,3 +1,124 @@
+const lang = navigator.language.startsWith("ko") ? "ko" : "en";
+
+const i18n = {
+  ko: {
+    today: "오늘",
+    tomorrow: "내일",
+    searchPlaceholder: "위치 추가: 예) Seoul, Tokyo",
+    searchEmpty: "검색 결과가 없습니다.",
+    locMax: "위치는 최대 2개까지만 저장할 수 있습니다.",
+    locAddSuccess: "위치 추가 완료",
+    locLoading: "위치 검색 중...",
+    locFail: "위치를 찾지 못했습니다.",
+    locLoadFail: "로컬 위치 목록 조회 실패",
+    refreshing: "날씨 및 추천 갱신 중...",
+    reqLoc: "위치를 추가해주세요.",
+    recFail: "추천 조회에 실패했습니다.",
+    upToDate: "추천이 최신 상태입니다.",
+    emptyCards: "위치를 추가하면 추천이 표시됩니다.",
+    precipProb: "강수확률",
+    tempRange: "일교차",
+    low: "최저",
+    high: "최고",
+    dataFallback: "임시",
+    connFail: "연결 실패",
+    dataLive: "실시간 기준",
+    noData: "미확인",
+    dataFormatError: "데이터 형식 오류",
+    outfit: "옷차림",
+    accessories: "액세서리",
+    // metrics
+    temp0: "영하권: 보온이 우선입니다",
+    temp8: "매우 쌀쌀: 겉옷 강화",
+    temp15: "서늘: 레이어링 권장",
+    temp24: "쾌적: 기본 복장",
+    tempHot: "더움: 통기성 필수",
+    hum40: "건조: 보습 필요",
+    hum60: "적당: 쾌적한 구간",
+    hum75: "습함: 땀 관리 필요",
+    humHumid: "높은 습도: 통기성 중요",
+    uv3: "낮음",
+    uv5: "보통",
+    uv8: "높음: 자외선 대비",
+    uvVeryHigh: "매우 높음: 차단 필수",
+    // weather
+    Clear_sky: "맑음",
+    Partly_cloudy: "구름 조금",
+    Cloudy: "흐림",
+    Rain: "비",
+    Snow: "눈",
+    Rain_showers: "소나기",
+    Snow_showers: "눈보라",
+    Thunderstorm: "뇌우"
+  },
+  en: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    searchPlaceholder: "Add location: e.g. Seoul, Tokyo",
+    searchEmpty: "No results found.",
+    locMax: "Maximum 2 locations allowed.",
+    locAddSuccess: "Location added",
+    locLoading: "Searching location...",
+    locFail: "Location not found.",
+    locLoadFail: "Failed to load locations",
+    refreshing: "Refreshing weather...",
+    reqLoc: "Please add a location.",
+    recFail: "Failed to load recommendations.",
+    upToDate: "Recommendations are up-to-date.",
+    emptyCards: "Add a location to see recommendations.",
+    precipProb: "Precipitation",
+    tempRange: "Temp Range",
+    low: "Low",
+    high: "High",
+    dataFallback: "Fallback",
+    connFail: "Connection Failed",
+    dataLive: "Live Data",
+    noData: "N/A",
+    dataFormatError: "Data format error",
+    outfit: "Outfit",
+    accessories: "Accessories",
+    // metrics
+    temp0: "Freezing: Prioritize warmth",
+    temp8: "Very cold: Thick outer layer",
+    temp15: "Cool: Layering recommended",
+    temp24: "Comfortable: Basic wear",
+    tempHot: "Hot: Breathability essential",
+    hum40: "Dry: Moisturise",
+    hum60: "Comfortable",
+    hum75: "Humid: Manage sweat",
+    humHumid: "Very humid: Breathability essential",
+    uv3: "Low",
+    uv5: "Moderate",
+    uv8: "High: UV protection",
+    uvVeryHigh: "Very high: Block sun",
+    // weather
+    Clear_sky: "Clear sky",
+    Partly_cloudy: "Partly cloudy",
+    Cloudy: "Cloudy",
+    Rain: "Rain",
+    Snow: "Snow",
+    Rain_showers: "Rain showers",
+    Snow_showers: "Snow showers",
+    Thunderstorm: "Thunderstorm"
+  }
+};
+const t = (key) => i18n[lang][key] || key;
+
+document.documentElement.lang = lang;
+if (lang === "en") {
+  document.title = "Weather Outfit";
+  const eyebrowEl = document.querySelector(".eyebrow");
+  if (eyebrowEl) eyebrowEl.textContent = "What to wear today?";
+  const titleEl = document.querySelector("h1");
+  if (titleEl) titleEl.textContent = "Weather-based Outfit Recommendation";
+  const subtitleEl = document.querySelector(".subtitle");
+  if (subtitleEl) subtitleEl.textContent = "Considering temperature, humidity, UV, and precipitation.";
+  const applyBtn = document.getElementById("apply-button");
+  if (applyBtn) applyBtn.textContent = "Apply";
+  const refreshBtn = document.getElementById("refresh-button");
+  if (refreshBtn) refreshBtn.innerHTML = refreshBtn.innerHTML.replace("새로고침", "Refresh");
+}
+
 const state = {
   locations: [],
   cards: [],
@@ -76,17 +197,17 @@ async function loadLocations() {
     }
     renderLocationTags();
   } catch (error) {
-    updateStatus("로컬 위치 목록 조회 실패", "error");
+    updateStatus(t("locLoadFail"), "error");
   }
 }
 
 function setDateFilter(filter) {
   state.dateFilter = filter;
   if (filter === "today") {
-    toggleBtnEl.textContent = "오늘";
+    toggleBtnEl.textContent = t("today");
     toggleBtnEl.classList.remove("tomorrow");
   } else {
-    toggleBtnEl.textContent = "내일";
+    toggleBtnEl.textContent = t("tomorrow");
     toggleBtnEl.classList.add("tomorrow");
   }
   renderCards();
@@ -116,7 +237,7 @@ async function fetchSuggestions(query) {
 function renderAutocomplete(results) {
   autocompleteListEl.innerHTML = "";
   if (results.length === 0) {
-    autocompleteListEl.innerHTML = `<li class="empty-item">검색 결과가 없습니다.</li>`;
+    autocompleteListEl.innerHTML = `<li class="empty-item">${t("searchEmpty")}</li>`;
   } else {
     results.forEach((item) => {
       const li = document.createElement("li");
@@ -138,7 +259,7 @@ async function addLocationFromSuggestion(item) {
   applyButtonEl.disabled = true;
 
   if (state.locations.length >= 2) {
-    updateStatus("위치는 최대 2개까지만 저장할 수 있습니다.", "error");
+    updateStatus(t("locMax"), "error");
     return;
   }
 
@@ -152,7 +273,7 @@ async function addLocationFromSuggestion(item) {
   state.locations.push(next);
   saveToLocal();
   renderLocationTags();
-  updateStatus("위치 추가 완료", "ok");
+  updateStatus(t("locAddSuccess"), "ok");
   await refreshRecommendations();
 }
 
@@ -162,23 +283,23 @@ async function onAddLocation(event) {
   if (!query) return;
 
   if (state.locations.length >= 2) {
-    updateStatus("위치는 최대 2개까지만 저장할 수 있습니다.", "error");
+    updateStatus(t("locMax"), "error");
     return;
   }
 
   try {
-    updateStatus("위치 검색 중...", "loading");
+    updateStatus(t("locLoading"), "loading");
     const endpoint = new URL("https://geocoding-api.open-meteo.com/v1/search");
     endpoint.searchParams.set("name", query);
     endpoint.searchParams.set("count", "1");
-    endpoint.searchParams.set("language", "en");
+    endpoint.searchParams.set("language", lang.split("-")[0]);
 
     const response = await fetch(endpoint);
     const data = await response.json();
     const first = data?.results?.[0];
 
     if (!first) {
-      throw new Error("위치를 찾지 못했습니다.");
+      throw new Error(t("locFail"));
     }
 
     const next = {
@@ -228,37 +349,37 @@ function renderLocationTags() {
   if (state.locations.length >= 2) {
     inputEl.placeholder = "";
   } else {
-    inputEl.placeholder = "위치 추가: 예) Seoul, Tokyo";
+    inputEl.placeholder = t("searchPlaceholder");
   }
 }
 
 async function refreshRecommendations() {
   try {
-    updateStatus("날씨 및 추천 갱신 중...", "loading");
+    updateStatus(t("refreshing"), "loading");
 
     if (state.locations.length === 0) {
       state.cards = [];
       renderCards();
-      updateStatus("위치를 추가해주세요.", "ok");
+      updateStatus(t("reqLoc"), "ok");
       return;
     }
 
     const response = await fetch("/api/recommendations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ locations: state.locations }),
+      body: JSON.stringify({ locations: state.locations, lang: lang }),
     });
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.message || "추천 조회에 실패했습니다.");
+      throw new Error(data.message || t("recFail"));
     }
 
     state.cards = data.cards;
     renderCards();
-    updateStatus("추천이 최신 상태입니다.", "ok");
+    updateStatus(t("upToDate"), "ok");
   } catch (error) {
-    updateStatus(error.message || "추천 조회 실패", "error");
+    updateStatus(error.message || t("recFail"), "error");
   }
 }
 
@@ -266,7 +387,7 @@ function renderCards() {
   const cardsEl = document.getElementById("cards");
 
   if (state.cards.length === 0) {
-    cardsEl.innerHTML = "<p class=\"empty\">위치를 추가하면 추천이 표시됩니다.</p>";
+    cardsEl.innerHTML = `<p class="empty">${t("emptyCards")}</p>`;
     return;
   }
 
@@ -278,14 +399,16 @@ function renderCards() {
       const weather = isTomorrow && entry.weather.tomorrow ? entry.weather.tomorrow : entry.weather;
       const recommendation = isTomorrow && entry.tomorrowRecommendation ? entry.tomorrowRecommendation : entry.recommendation;
 
-      const displayTemp = isTomorrow ? weather.tempAvg : weather.tempC;
+      const displayTemp = isTomorrow ? weather.tempMax : weather.tempC;
+      const displayTempMax = weather.tempMax ?? entry.weather.tempMax;
+      const displayTempMin = weather.tempMin ?? entry.weather.tempMin;
       const displayHumidity = weather.humidity ?? entry.weather.humidity ?? 0;
 
       const airQualityMessage = buildAirQualityLabel(weather.pm25, weather.pm10, weather.airQualityIndex);
       const rangeLabel = typeof weather.temperatureRange === "number" ? `${formatNum(weather.temperatureRange)}°C` : null;
       const tempMetric = getMetricByTemperature(displayTemp);
       const humidityMetric = getMetricByHumidity(displayHumidity);
-      const uvMetric = getMetricByUv(weather.uvIndex);
+      const uvMetric = getMetricByUv(weather.uvMax != null ? weather.uvMax : weather.uvIndex);
 
       const mainWeatherIcon = getWeatherIcon(weather.weatherDescription);
 
@@ -296,6 +419,7 @@ function renderCards() {
           <div class="card-header-info">
             <h2>${entry.name}</h2>
             <div class="temp-display">${displayTemp != null ? formatNum(displayTemp) : "-"}°C</div>
+            <div class="temp-range">${t('low')} ${displayTempMin != null ? formatNum(displayTempMin) : "-"}° / ${t('high')} ${displayTempMax != null ? formatNum(displayTempMax) : "-"}°</div>
             <div class="condition-label">${tempMetric.label}</div>
           </div>
         </div>
@@ -336,10 +460,10 @@ function renderCards() {
             </div>
           </div>
         </div>
-        <p class="metrics-sub">강수확률: ${weather.precipitationProbability != null ? weather.precipitationProbability : "미확인"}%, 일교차: ${rangeLabel || "미확인"}</p>
-        <p class="metrics-sub">데이터: ${entry.weather.source === "fallback" ? `임시 (${entry.weather.sourceMessage || "연결 실패"})` : "실시간 기준"} (${formatWeatherTimestamp(weather.updatedAt ?? entry.weather.updatedAt, entry.weather.timezone)})</p>
+        <p class="metrics-sub">${t('precipProb')}: ${weather.precipitationProbability != null ? weather.precipitationProbability : t('noData')}%, ${t('tempRange')}: ${rangeLabel || t('noData')}</p>
+        <p class="metrics-sub">Data: ${entry.weather.source === "fallback" ? `${t('dataFallback')} (${entry.weather.sourceMessage || t('connFail')})` : t('dataLive')} (${formatWeatherTimestamp(weather.updatedAt ?? entry.weather.updatedAt, entry.weather.timezone)})</p>
         <hr class="divider"/>
-        <h3 class="section-title">${isTomorrow ? "Tomorrow's" : "Today's"} Outfit</h3>
+        <h3 class="section-title">${isTomorrow ? t("tomorrow") : t("today")} ${t("outfit")}</h3>
         <div class="recommendation">
           <img src="${recommendation.image}" alt="${recommendation.outfitLabel}" class="outfit-image" />
           <div class="outfit-details">
@@ -353,7 +477,7 @@ function renderCards() {
             </div>
             ${recommendation.accessories.length > 0 ? `
             <div class="accessories-section">
-              <p class="outfit-category">Accessories</p>
+              <p class="outfit-category">${t('accessories')}</p>
               <ul class="checklist">
                 ${recommendation.accessories.map((acc) => acc.note
         ? `<li><span class="check-icon">✓</span> <span class="tooltip-container">${acc.name}<span class="tooltip">${acc.note}</span></span></li>`
@@ -381,44 +505,44 @@ function getWeatherIcon(description) {
 
 function getMetricByTemperature(tempC) {
   if (tempC <= 0) {
-    return { image: "assets/weather/temp-cold.png", label: "영하권: 보온이 우선입니다" };
+    return { image: "assets/weather/temp-cold.png", label: t("temp0") };
   }
   if (tempC <= 8) {
-    return { image: "assets/weather/temp-cool.png", label: "매우 쌀쌀: 겉옷 강화" };
+    return { image: "assets/weather/temp-cool.png", label: t("temp8") };
   }
   if (tempC <= 15) {
-    return { image: "assets/weather/temp-mild.png", label: "서늘: 레이어링 권장" };
+    return { image: "assets/weather/temp-mild.png", label: t("temp15") };
   }
   if (tempC <= 24) {
-    return { image: "assets/weather/temp-warm.png", label: "쾌적: 기본 복장" };
+    return { image: "assets/weather/temp-warm.png", label: t("temp24") };
   }
-  return { image: "assets/weather/temp-hot.png", label: "더움: 통기성 필수" };
+  return { image: "assets/weather/temp-hot.png", label: t("tempHot") };
 }
 
 function getMetricByHumidity(humidity) {
   if (humidity <= 40) {
-    return { image: "assets/weather/humidity-dry.png", label: "건조: 보습 필요" };
+    return { image: "assets/weather/humidity-dry.png", label: t("hum40") };
   }
   if (humidity <= 60) {
-    return { image: "assets/weather/humidity-comfort.png", label: "적당: 쾌적한 구간" };
+    return { image: "assets/weather/humidity-comfort.png", label: t("hum60") };
   }
   if (humidity <= 75) {
-    return { image: "assets/weather/humidity-high.png", label: "습함: 땀 관리 필요" };
+    return { image: "assets/weather/humidity-high.png", label: t("hum75") };
   }
-  return { image: "assets/weather/humidity-humid.png", label: "높은 습도: 통기성 중요" };
+  return { image: "assets/weather/humidity-humid.png", label: t("humHumid") };
 }
 
 function getMetricByUv(uvIndex) {
   if (uvIndex <= 3) {
-    return { image: "assets/weather/uv-low.png", label: "낮음" };
+    return { image: "assets/weather/uv-low.png", label: t("uv3") };
   }
   if (uvIndex <= 5) {
-    return { image: "assets/weather/uv-mid.png", label: "보통" };
+    return { image: "assets/weather/uv-mid.png", label: t("uv5") };
   }
   if (uvIndex <= 8) {
-    return { image: "assets/weather/uv-high.png", label: "높음: 자외선 대비" };
+    return { image: "assets/weather/uv-high.png", label: t("uv8") };
   }
-  return { image: "assets/weather/uv-very-high.png", label: "매우 높음: 차단 필수" };
+  return { image: "assets/weather/uv-very-high.png", label: t("uvVeryHigh") };
 }
 
 function formatNum(value) {
@@ -435,12 +559,12 @@ function buildAirQualityLabel(pm25, pm10, airQualityIndex) {
 }
 
 function formatWeatherTimestamp(timeString, timezone) {
-  if (!timeString) return "데이터 미제공";
+  if (!timeString) return t("noData");
 
   const date = new Date(timeString);
-  if (Number.isNaN(date.getTime())) return "데이터 형식 오류";
+  if (Number.isNaN(date.getTime())) return t("dataFormatError");
 
-  return date.toLocaleString("ko-KR", {
+  return date.toLocaleString(lang === "ko" ? "ko-KR" : "en-US", {
     year: "numeric",
     month: "numeric",
     day: "numeric",

@@ -424,6 +424,13 @@ button[disabled] {
   color: var(--text);
 }
 
+.temp-range {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 6px;
+}
+
 .condition-label {
   font-size: 0.95rem;
   color: var(--muted);

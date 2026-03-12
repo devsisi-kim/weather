@@ -65,7 +65,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
     "daily",
     "precipitation_probability_max,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,weather_code",
   );
-  endpoint.searchParams.set("hourly", "temperature_2m");
+  endpoint.searchParams.set("hourly", "temperature_2m,uv_index");
   endpoint.searchParams.set("forecast_days", "2");
   endpoint.searchParams.set("timezone", "auto");
 
@@ -81,6 +81,9 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
 
   const temperatureRange = resolveTemperatureRange(data);
 
+  const todayMax = data.daily.temperature_2m_max?.[0] ?? null;
+  const todayMin = data.daily.temperature_2m_min?.[0] ?? null;
+
   const tomorrowMax = data.daily.temperature_2m_max?.[1] ?? null;
   const tomorrowMin = data.daily.temperature_2m_min?.[1] ?? null;
   const tomorrowPrecipProb = data.daily.precipitation_probability_max?.[1] ?? null;
@@ -94,10 +97,26 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   const todayWeatherCode = data.daily.weather_code?.[0] ?? null;
   const tomorrowWeatherCode = data.daily.weather_code?.[1] ?? null;
 
+  const hourlyUv = Array.isArray(data?.hourly?.uv_index) ? data.hourly.uv_index : [];
+  const hourlyTime = Array.isArray(data?.hourly?.time) ? data.hourly.time : [];
+  
+  const todayUvMax = data.daily.uv_index_max?.[0] ?? data.current.uv_index;
+  const todayUvArr = hourlyUv.slice(0, 24).filter(v => typeof v === 'number');
+  const todayPeakIndex = todayUvArr.length > 0 ? hourlyUv.slice(0, 24).indexOf(Math.max(...todayUvArr)) : -1;
+  const uvPeakHour = todayPeakIndex >= 0 ? new Date(hourlyTime[todayPeakIndex]).getHours() : null;
+
+  const tomorrowUvArr = hourlyUv.slice(24, 48).filter(v => typeof v === 'number');
+  const tomPeakIndex = tomorrowUvArr.length > 0 ? hourlyUv.slice(24, 48).indexOf(Math.max(...tomorrowUvArr)) : -1;
+  const tomUvPeakHour = tomPeakIndex >= 0 ? new Date(hourlyTime[24 + tomPeakIndex]).getHours() : null;
+
   return {
     tempC: data.current.temperature_2m,
+    tempMax: todayMax,
+    tempMin: todayMin,
     humidity: data.current.relative_humidity_2m,
     uvIndex: data.current.uv_index,
+    uvMax: todayUvMax,
+    uvPeakHour,
     precipitationMm: data.current.precipitation,
     precipitationProbability: data.daily.precipitation_probability_max?.[0] ?? 0,
     temperatureRange,
@@ -113,6 +132,8 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
       tempAvg: tomorrowMax != null && tomorrowMin != null ? Number(((tomorrowMax + tomorrowMin) / 2).toFixed(1)) : null,
       precipitationProbability: tomorrowPrecipProb,
       uvIndex: tomorrowUv,
+      uvMax: tomorrowUv,
+      uvPeakHour: tomUvPeakHour,
       precipitationMm: tomorrowPrecipMm,
       temperatureRange: tomorrowTempRange,
       weatherDescription: weatherCodeToDescription(tomorrowWeatherCode),
@@ -249,6 +270,8 @@ function buildFallbackWeather(reason = "외부 날씨 API 연결 실패") {
     tempC: 22,
     humidity: 55,
     uvIndex: 3,
+    uvMax: 3,
+    uvPeakHour: 14,
     precipitationMm: 0,
     precipitationProbability: 10,
     temperatureRange: 7,
@@ -346,6 +369,7 @@ async function innerHandler(req, res, fetchImpl) {
     if (urlPath.includes("/api/recommendations") && method === "POST") {
       const body = await parseRequestBody(req);
       const locations = Array.isArray(body.locations) ? body.locations : [];
+      const lang = body.lang || "ko";
 
       const cards = await Promise.all(
         locations.map(async (location) => {
@@ -391,7 +415,7 @@ async function innerHandler(req, res, fetchImpl) {
           }
           weather.updatedAt = weather.updatedAt || new Date().toISOString();
           weather.source = weatherSource;
-          const recommendation = recommendOutfit(weather);
+          const recommendation = recommendOutfit({ ...weather, lang });
           if (weatherSource === "fallback") {
             const fallbackMsg = "실시간 날씨 연결이 불안정해 임시 날씨 값으로 추천합니다.";
             if (recommendation.items && recommendation.items.length > 0) {
@@ -402,14 +426,17 @@ async function innerHandler(req, res, fetchImpl) {
           }
 
           let tomorrowRecommendation = null;
-          if (weather.tomorrow && weather.tomorrow.tempAvg != null) {
+          if (weather.tomorrow && weather.tomorrow.tempMax != null) {
             tomorrowRecommendation = recommendOutfit({
-              tempC: weather.tomorrow.tempAvg,
+              tempC: weather.tomorrow.tempMax,
               humidity: weather.humidity, // 내일 습도는 알 수 없으므로 오늘 습도를 임의로(또는 기본값) 유지
               uvIndex: weather.tomorrow.uvIndex ?? 0,
+              uvMax: weather.tomorrow.uvMax ?? 0,
+              uvPeakHour: weather.tomorrow.uvPeakHour ?? null,
               precipitationMm: weather.tomorrow.precipitationMm ?? 0,
               precipitationProbability: weather.tomorrow.precipitationProbability ?? 0,
               temperatureRange: weather.tomorrow.temperatureRange ?? null,
+              lang
             });
           }
 
@@ -421,7 +448,12 @@ async function innerHandler(req, res, fetchImpl) {
       return;
     }
 
-    json(res, 404, { message: "Not Found API route" });
+    if (urlPath.startsWith("/api/")) {
+      json(res, 404, { message: "Not Found API route" });
+      return;
+    }
+
+    return serveStatic(req, res);
   } catch (error) {
     json(res, 500, { message: error?.message || "서버 오류가 발생했습니다." });
   }
