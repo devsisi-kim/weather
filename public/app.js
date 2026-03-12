@@ -1,4 +1,7 @@
-const lang = navigator.language.startsWith("ko") ? "ko" : "en";
+let lang = localStorage.getItem("weather_lang");
+if (!lang) {
+  lang = navigator.language.startsWith("ko") ? "ko" : "en";
+}
 
 const i18n = {
   ko: {
@@ -27,6 +30,8 @@ const i18n = {
     dataFormatError: "데이터 형식 오류",
     outfit: "옷차림",
     accessories: "액세서리",
+    whatToWear: "오늘 뭐 입지?",
+    searchAnother: "다른 위치를 추가하려면 검색하세요...",
     // metrics
     temp0: "영하권: 보온이 우선입니다",
     temp8: "매우 쌀쌀: 겉옷 강화",
@@ -77,6 +82,8 @@ const i18n = {
     dataFormatError: "Data format error",
     outfit: "Outfit",
     accessories: "Accessories",
+    whatToWear: "What to wear today?",
+    searchAnother: "Search to add another location...",
     // metrics
     temp0: "Freezing: Prioritize warmth",
     temp8: "Very cold: Thick outer layer",
@@ -107,62 +114,73 @@ const t = (key) => i18n[lang][key] || key;
 document.documentElement.lang = lang;
 if (lang === "en") {
   document.title = "Weather Outfit";
-  const eyebrowEl = document.querySelector(".eyebrow");
-  if (eyebrowEl) eyebrowEl.textContent = "What to wear today?";
-  const titleEl = document.querySelector("h1");
-  if (titleEl) titleEl.textContent = "Weather-based Outfit Recommendation";
-  const subtitleEl = document.querySelector(".subtitle");
-  if (subtitleEl) subtitleEl.textContent = "Considering temperature, humidity, UV, and precipitation.";
-  const applyBtn = document.getElementById("apply-button");
-  if (applyBtn) applyBtn.textContent = "Apply";
   const refreshBtn = document.getElementById("refresh-button");
   if (refreshBtn) refreshBtn.innerHTML = refreshBtn.innerHTML.replace("새로고침", "Refresh");
 }
+const eyebrowEl = document.getElementById("main-eyebrow");
+if (eyebrowEl) eyebrowEl.textContent = t("whatToWear");
+const inputElConfig = document.getElementById("location-input");
+if (inputElConfig) inputElConfig.placeholder = t("searchAnother");
+
+const dTodayBtn = document.getElementById("date-today-btn");
+if (dTodayBtn) dTodayBtn.textContent = t("today");
+const dTomBtn = document.getElementById("date-tomorrow-btn");
+if (dTomBtn) dTomBtn.textContent = t("tomorrow");
+
+const btnKo = document.getElementById("lang-ko-btn");
+const btnEn = document.getElementById("lang-en-btn");
+if (lang === "ko") {
+  if(btnKo) btnKo.classList.add("active");
+} else {
+  if(btnEn) btnEn.classList.add("active");
+}
+if(btnKo) btnKo.addEventListener("click", () => {
+  if (lang !== "ko") {
+    localStorage.setItem("weather_lang", "ko");
+    location.reload();
+  }
+});
+if(btnEn) btnEn.addEventListener("click", () => {
+  if (lang !== "en") {
+    localStorage.setItem("weather_lang", "en");
+    location.reload();
+  }
+});
 
 const state = {
   locations: [],
   cards: [],
-  dateFilter: "today"
+  dateFilter: "today",
+  activeLocationId: null
 };
 
-const locationsEl = document.getElementById("locations");
 const statusEl = document.getElementById("status");
 const formEl = document.getElementById("location-form");
 const inputEl = document.getElementById("location-input");
 const refreshEl = document.getElementById("refresh-button");
 const autocompleteListEl = document.getElementById("autocomplete-list");
 const cardsEl = document.getElementById("cards");
-const applyButtonEl = document.getElementById("apply-button");
-const toggleBtnEl = document.getElementById("date-toggle-btn");
+const tabsContainer = document.getElementById("location-tabs");
+const dateTodayBtn = document.getElementById("date-today-btn");
+const dateTomorrowBtn = document.getElementById("date-tomorrow-btn");
 
-formEl.addEventListener("submit", onAddLocation);
-refreshEl.addEventListener("click", refreshRecommendations);
+if(formEl) formEl.addEventListener("submit", onAddLocation);
+if(refreshEl) refreshEl.addEventListener("click", refreshRecommendations);
 
-toggleBtnEl.addEventListener("click", () => {
-  const newFilter = state.dateFilter === "today" ? "tomorrow" : "today";
-  setDateFilter(newFilter);
-});
+if(dateTodayBtn) dateTodayBtn.addEventListener("click", () => setDateFilter("today"));
+if(dateTomorrowBtn) dateTomorrowBtn.addEventListener("click", () => setDateFilter("tomorrow"));
 
 let searchTimeout = null;
 
-inputEl.addEventListener("input", (e) => {
+if(inputEl) inputEl.addEventListener("input", (e) => {
   const val = e.target.value.trim();
-
-  // 입력 여부에 따라 '적용' 버튼 활성화 상태 관리
-  if (val.length > 0) {
-    applyButtonEl.disabled = false;
-  } else {
-    applyButtonEl.disabled = true;
-  }
-
   clearTimeout(searchTimeout);
 
   if (!val) {
-    autocompleteListEl.hidden = true;
+    if(autocompleteListEl) autocompleteListEl.hidden = true;
     return;
   }
 
-  // 1초 디바운스
   searchTimeout = setTimeout(() => {
     fetchSuggestions(val);
   }, 1000);
@@ -183,6 +201,16 @@ async function bootstrap() {
   setDateFilter(state.dateFilter); // Initialize tab state
 }
 
+function ensureActiveLocationId() {
+  if (state.locations.length > 0) {
+    if (!state.activeLocationId || !state.locations.find(l => l.id === state.activeLocationId)) {
+      state.activeLocationId = state.locations[0].id;
+    }
+  } else {
+    state.activeLocationId = null;
+  }
+}
+
 async function loadLocations() {
   try {
     const saved = localStorage.getItem("weather_locations");
@@ -195,7 +223,8 @@ async function loadLocations() {
       ];
       saveToLocal();
     }
-    renderLocationTags();
+    ensureActiveLocationId();
+    renderLocationTabs();
   } catch (error) {
     updateStatus(t("locLoadFail"), "error");
   }
@@ -204,11 +233,11 @@ async function loadLocations() {
 function setDateFilter(filter) {
   state.dateFilter = filter;
   if (filter === "today") {
-    toggleBtnEl.textContent = t("today");
-    toggleBtnEl.classList.remove("tomorrow");
+    dateTodayBtn.classList.add("active");
+    dateTomorrowBtn.classList.remove("active");
   } else {
-    toggleBtnEl.textContent = t("tomorrow");
-    toggleBtnEl.classList.add("tomorrow");
+    dateTodayBtn.classList.remove("active");
+    dateTomorrowBtn.classList.add("active");
   }
   renderCards();
 }
@@ -256,7 +285,8 @@ function renderAutocomplete(results) {
 async function addLocationFromSuggestion(item) {
   autocompleteListEl.hidden = true;
   inputEl.value = "";
-  applyButtonEl.disabled = true;
+  const searchSection = document.getElementById("search-section");
+  if(searchSection) searchSection.hidden = true;
 
   if (state.locations.length >= 2) {
     updateStatus(t("locMax"), "error");
@@ -271,8 +301,9 @@ async function addLocationFromSuggestion(item) {
   };
 
   state.locations.push(next);
+  state.activeLocationId = next.id;
   saveToLocal();
-  renderLocationTags();
+  renderLocationTabs();
   updateStatus(t("locAddSuccess"), "ok");
   await refreshRecommendations();
 }
@@ -310,10 +341,14 @@ async function onAddLocation(event) {
     };
 
     state.locations.push(next);
+    state.activeLocationId = next.id;
     saveToLocal();
-    renderLocationTags();
+    renderLocationTabs();
     inputEl.value = "";
-    applyButtonEl.disabled = true;
+    
+    const searchSection = document.getElementById("search-section");
+    if(searchSection) searchSection.hidden = true;
+    
     updateStatus("위치 추가 완료", "ok");
     await refreshRecommendations();
   } catch (error) {
@@ -323,33 +358,63 @@ async function onAddLocation(event) {
 
 async function removeLocation(id) {
   state.locations = state.locations.filter(loc => loc.id !== id);
+  ensureActiveLocationId();
   saveToLocal();
-  renderLocationTags();
+  renderLocationTabs();
   await refreshRecommendations();
 }
 
-function renderLocationTags() {
-  const html = state.locations
-    .map(
-      (location) => `
-      <button class="tag" data-id="${location.id}" type="button">
-        ${location.name}
-        <span class="tag-remove" aria-hidden="true">x</span>
-      </button>
-    `,
-    )
-    .join("");
-
-  locationsEl.innerHTML = html || "";
-
-  for (const button of locationsEl.querySelectorAll(".tag")) {
-    button.addEventListener("click", () => removeLocation(button.dataset.id));
-  }
-
-  if (state.locations.length >= 2) {
-    inputEl.placeholder = "";
+function renderLocationTabs() {
+  const headerLocName = document.getElementById("header-location-name");
+  
+  if (state.locations.length === 0) {
+    tabsContainer.innerHTML = `<button class="add-loc-btn active">+</button>`;
+    if(headerLocName) headerLocName.textContent = t("reqLoc");
+    const searchSec = document.getElementById("search-section");
+    if(searchSec) searchSec.hidden = false;
   } else {
-    inputEl.placeholder = t("searchPlaceholder");
+    ensureActiveLocationId();
+    const activeLoc = state.locations.find(l => l.id === state.activeLocationId);
+    if(activeLoc && headerLocName) {
+       headerLocName.textContent = activeLoc.name;
+    }
+    
+    const html = state.locations.map(loc => `
+      <button class="loc-tab ${loc.id === state.activeLocationId ? 'active' : ''}" data-id="${loc.id}">
+        ${loc.name}
+        ${loc.id === state.activeLocationId ? `<span class="tab-remove" aria-hidden="true">&times;</span>` : ''}
+      </button>
+    `).join("") + (state.locations.length < 2 ? `<button class="add-loc-btn">+</button>` : '');
+    
+    tabsContainer.innerHTML = html;
+    
+    tabsContainer.querySelectorAll(".loc-tab").forEach(tab => {
+      const removeBtn = tab.querySelector(".tab-remove");
+      if (removeBtn) {
+        removeBtn.addEventListener("click", (e) => {
+           e.stopPropagation();
+           removeLocation(tab.dataset.id);
+        });
+      }
+      tab.addEventListener("click", () => {
+         state.activeLocationId = tab.dataset.id;
+         const searchSec = document.getElementById("search-section");
+         if(searchSec) searchSec.hidden = true;
+         renderLocationTabs();
+         renderCards();
+      });
+    });
+    
+    const addBtn = tabsContainer.querySelector(".add-loc-btn");
+    if (addBtn) {
+      addBtn.addEventListener("click", () => {
+         const searchSec = document.getElementById("search-section");
+         if(searchSec) {
+           searchSec.hidden = !searchSec.hidden;
+           if(!searchSec.hidden) inputEl.focus();
+         }
+      });
+    }
   }
 }
 
@@ -375,7 +440,7 @@ async function refreshRecommendations() {
       throw new Error(data.message || t("recFail"));
     }
 
-    state.cards = data.cards;
+    state.cards = data.cards.map((c, i) => ({ ...c, locId: state.locations[i]?.id }));
     renderCards();
     updateStatus(t("upToDate"), "ok");
   } catch (error) {
@@ -384,40 +449,37 @@ async function refreshRecommendations() {
 }
 
 function renderCards() {
-  const cardsEl = document.getElementById("cards");
-
-  if (state.cards.length === 0) {
+  if (state.cards.length === 0 || !state.activeLocationId) {
     cardsEl.innerHTML = `<p class="empty">${t("emptyCards")}</p>`;
     return;
   }
 
-  cardsEl.classList.toggle("single-card", state.cards.length === 1);
+  const entry = state.cards.find(c => c.locId === state.activeLocationId);
+  if (!entry) return;
 
-  cardsEl.innerHTML = state.cards
-    .map((entry) => {
-      const isTomorrow = state.dateFilter === "tomorrow";
-      const weather = isTomorrow && entry.weather.tomorrow ? entry.weather.tomorrow : entry.weather;
-      const recommendation = isTomorrow && entry.tomorrowRecommendation ? entry.tomorrowRecommendation : entry.recommendation;
+  cardsEl.className = "cards single-card";
 
-      const displayTemp = isTomorrow ? weather.tempMax : weather.tempC;
-      const displayTempMax = weather.tempMax ?? entry.weather.tempMax;
-      const displayTempMin = weather.tempMin ?? entry.weather.tempMin;
-      const displayHumidity = weather.humidity ?? entry.weather.humidity ?? 0;
+  const isTomorrow = state.dateFilter === "tomorrow";
+  const weather = isTomorrow && entry.weather.tomorrow ? entry.weather.tomorrow : entry.weather;
+  const recommendation = isTomorrow && entry.tomorrowRecommendation ? entry.tomorrowRecommendation : entry.recommendation;
 
-      const airQualityMessage = buildAirQualityLabel(weather.pm25, weather.pm10, weather.airQualityIndex);
-      const rangeLabel = typeof weather.temperatureRange === "number" ? `${formatNum(weather.temperatureRange)}°C` : null;
-      const tempMetric = getMetricByTemperature(displayTemp);
-      const humidityMetric = getMetricByHumidity(displayHumidity);
-      const uvMetric = getMetricByUv(weather.uvMax != null ? weather.uvMax : weather.uvIndex);
+  const displayTemp = isTomorrow ? weather.tempMax : weather.tempC;
+  const displayTempMax = weather.tempMax ?? entry.weather.tempMax;
+  const displayTempMin = weather.tempMin ?? entry.weather.tempMin;
+  const displayHumidity = weather.humidity ?? entry.weather.humidity ?? 0;
 
-      const mainWeatherIcon = getWeatherIcon(weather.weatherDescription);
+  const airQualityMessage = buildAirQualityLabel(weather.pm25, weather.pm10, weather.airQualityIndex);
+  const rangeLabel = typeof weather.temperatureRange === "number" ? `${formatNum(weather.temperatureRange)}°C` : null;
+  const tempMetric = getMetricByTemperature(displayTemp);
+  const humidityMetric = getMetricByHumidity(displayHumidity);
+  const uvMetric = getMetricByUv(weather.uvMax != null ? weather.uvMax : weather.uvIndex);
+  const mainWeatherIcon = getWeatherIcon(weather.weatherDescription);
 
-      return `
+  cardsEl.innerHTML = `
       <article class="card">
         <div class="card-header">
           <img src="assets/weather/${mainWeatherIcon}" alt="Weather Icon" class="main-weather-icon" />
           <div class="card-header-info">
-            <h2>${entry.name}</h2>
             <div class="temp-display">${displayTemp != null ? formatNum(displayTemp) : "-"}°C</div>
             <div class="temp-range">${t('low')} ${displayTempMin != null ? formatNum(displayTempMin) : "-"}° / ${t('high')} ${displayTempMax != null ? formatNum(displayTempMax) : "-"}°</div>
             <div class="condition-label">${tempMetric.label}</div>
@@ -490,8 +552,6 @@ function renderCards() {
         </div>
       </article>
         `;
-    })
-    .join("");
 }
 
 function getWeatherIcon(description) {

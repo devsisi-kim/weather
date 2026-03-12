@@ -65,7 +65,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
     "daily",
     "precipitation_probability_max,temperature_2m_max,temperature_2m_min,uv_index_max,precipitation_sum,weather_code",
   );
-  endpoint.searchParams.set("hourly", "temperature_2m,uv_index");
+  endpoint.searchParams.set("hourly", "temperature_2m,uv_index,relative_humidity_2m");
   endpoint.searchParams.set("forecast_days", "2");
   endpoint.searchParams.set("timezone", "auto");
 
@@ -109,6 +109,10 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
   const tomPeakIndex = tomorrowUvArr.length > 0 ? hourlyUv.slice(24, 48).indexOf(Math.max(...tomorrowUvArr)) : -1;
   const tomUvPeakHour = tomPeakIndex >= 0 ? new Date(hourlyTime[24 + tomPeakIndex]).getHours() : null;
 
+  const hourlyHumidity = Array.isArray(data?.hourly?.relative_humidity_2m) ? data.hourly.relative_humidity_2m : [];
+  const tomHumidityArr = hourlyHumidity.slice(24, 48).filter(v => typeof v === 'number');
+  const tomAvgHumidity = tomHumidityArr.length > 0 ? Math.round(tomHumidityArr.reduce((a, b) => a + b, 0) / tomHumidityArr.length) : null;
+
   return {
     tempC: data.current.temperature_2m,
     tempMax: todayMax,
@@ -137,7 +141,7 @@ async function fetchCurrentWeather(fetchImpl, { latitude, longitude }) {
       precipitationMm: tomorrowPrecipMm,
       temperatureRange: tomorrowTempRange,
       weatherDescription: weatherCodeToDescription(tomorrowWeatherCode),
-      humidity: data.current.relative_humidity_2m, // 내일 시간별 습도 미제공 → 오늘값 유지
+      humidity: tomAvgHumidity != null ? tomAvgHumidity : data.current.relative_humidity_2m,
       pm25: null,
       pm10: null,
       airQualityIndex: null,
@@ -190,29 +194,6 @@ async function fetchAirQuality(fetchImpl, { latitude, longitude, timezone }) {
   endpoint.searchParams.set("latitude", String(latitude));
   endpoint.searchParams.set("longitude", String(longitude));
   endpoint.searchParams.set("current", "pm2_5,pm10,us_aqi");
-  endpoint.searchParams.set("timezone", timezone || "auto");
-
-  const response = await fetchImpl(endpoint);
-  if (!response.ok) {
-    return fetchAirQualityFromHourly(fetchImpl, { latitude, longitude, timezone });
-  }
-
-  const data = await response.json();
-  if (data?.current) {
-    return {
-      pm25: typeof data.current.pm2_5 === "number" ? data.current.pm2_5 : null,
-      pm10: typeof data.current.pm10 === "number" ? data.current.pm10 : null,
-      airQualityIndex: typeof data.current.us_aqi === "number" ? data.current.us_aqi : null,
-    };
-  }
-
-  return fetchAirQualityFromHourly(fetchImpl, { latitude, longitude, timezone });
-}
-
-async function fetchAirQualityFromHourly(fetchImpl, { latitude, longitude, timezone }) {
-  const endpoint = new URL("https://air-quality-api.open-meteo.com/v1/air-quality");
-  endpoint.searchParams.set("latitude", String(latitude));
-  endpoint.searchParams.set("longitude", String(longitude));
   endpoint.searchParams.set("hourly", "pm2_5,pm10,us_aqi");
   endpoint.searchParams.set("timezone", timezone || "auto");
 
@@ -220,18 +201,21 @@ async function fetchAirQualityFromHourly(fetchImpl, { latitude, longitude, timez
   if (!response.ok) {
     return null;
   }
-
   const data = await response.json();
+  let result = { today: {}, tomorrow: {} };
+  
+  if (data?.current) {
+    result.today = {
+      pm25: typeof data.current.pm2_5 === "number" ? data.current.pm2_5 : null,
+      pm10: typeof data.current.pm10 === "number" ? data.current.pm10 : null,
+      airQualityIndex: typeof data.current.us_aqi === "number" ? data.current.us_aqi : null,
+    };
+  }
+
   const times = Array.isArray(data?.hourly?.time) ? data.hourly.time : [];
-  const pm25History = Array.isArray(data?.hourly?.pm2_5) ? data.hourly.pm2_5 : [];
-  const pm10History = Array.isArray(data?.hourly?.pm10) ? data.hourly.pm10 : [];
-  const aqiHistory = Array.isArray(data?.hourly?.us_aqi) ? data.hourly.us_aqi : [];
-
-  const target = new Date();
-  const targetTs = target.getTime();
-  let bestIndex = 0;
-
   if (times.length > 0) {
+    const targetTs = new Date().getTime();
+    let bestIndex = 0;
     let bestGap = Number.POSITIVE_INFINITY;
     times.forEach((timeValue, index) => {
       const timeTs = new Date(timeValue).getTime();
@@ -241,21 +225,31 @@ async function fetchAirQualityFromHourly(fetchImpl, { latitude, longitude, timez
         bestIndex = index;
       }
     });
+
+    if (result.today.pm25 == null && typeof data.hourly.pm2_5?.[bestIndex] === "number") {
+      result.today.pm25 = data.hourly.pm2_5[bestIndex];
+    }
+    if (result.today.pm10 == null && typeof data.hourly.pm10?.[bestIndex] === "number") {
+      result.today.pm10 = data.hourly.pm10[bestIndex];
+    }
+    if (result.today.airQualityIndex == null && typeof data.hourly.us_aqi?.[bestIndex] === "number") {
+      result.today.airQualityIndex = data.hourly.us_aqi[bestIndex];
+    }
+
+    const tomIndex = bestIndex + 24;
+    if (tomIndex < times.length) {
+      result.tomorrow = {
+        pm25: data.hourly.pm2_5?.[tomIndex] ?? null,
+        pm10: data.hourly.pm10?.[tomIndex] ?? null,
+        airQualityIndex: data.hourly.us_aqi?.[tomIndex] ?? null,
+      };
+    }
   }
 
-  const pm25 = pm25History[bestIndex];
-  const pm10 = pm10History[bestIndex];
-  const airQualityIndex = aqiHistory[bestIndex];
-
-  if (pm25 == null && pm10 == null && airQualityIndex == null) {
+  if (result.today.pm25 == null && result.today.pm10 == null && result.today.airQualityIndex == null) {
     return null;
   }
-
-  return {
-    pm25: typeof pm25 === "number" ? pm25 : null,
-    pm10: typeof pm10 === "number" ? pm10 : null,
-    airQualityIndex: typeof airQualityIndex === "number" ? airQualityIndex : null,
-  };
+  return result;
 }
 
 function coerceTemperatureRange(rawRange) {
@@ -391,23 +385,25 @@ async function innerHandler(req, res, fetchImpl) {
               timezone: weather.timezone,
             });
             if (!airQuality) {
-              airQuality = await fetchAirQualityFromWaqi(fetchImpl, {
+              const waqi = await fetchAirQualityFromWaqi(fetchImpl, {
                 latitude: location.latitude,
                 longitude: location.longitude,
               });
+              if (waqi) {
+                airQuality = { today: waqi, tomorrow: {} };
+              }
             }
           }
 
-          if (airQuality) {
-            weather.pm25 = airQuality.pm25;
-            weather.pm10 = airQuality.pm10;
-            weather.airQualityIndex = airQuality.airQualityIndex;
-            // 내일 탭에도 오늘 대기질 데이터를 복사 (내일 예보 대기질은 미제공)
-            if (weather.tomorrow) {
-              weather.tomorrow.pm25 = airQuality.pm25;
-              weather.tomorrow.pm10 = airQuality.pm10;
-              weather.tomorrow.airQualityIndex = airQuality.airQualityIndex;
-            }
+          if (airQuality && airQuality.today) {
+            weather.pm25 = airQuality.today.pm25;
+            weather.pm10 = airQuality.today.pm10;
+            weather.airQualityIndex = airQuality.today.airQualityIndex;
+          }
+          if (airQuality && airQuality.tomorrow && weather.tomorrow) {
+            weather.tomorrow.pm25 = airQuality.tomorrow.pm25;
+            weather.tomorrow.pm10 = airQuality.tomorrow.pm10;
+            weather.tomorrow.airQualityIndex = airQuality.tomorrow.airQualityIndex;
           }
 
           if (typeof weather.temperatureRange === "number") {

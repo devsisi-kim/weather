@@ -198,3 +198,36 @@
 - 다음 액션: 필요 시 Stage/설명 수동 보강
 - 참조 문서/커밋: base=580e7c5, stats=+306/-82
 
+## 2026-03-12 15:50:00 +0900 - [Feature/UI]
+- 요청/배경: 다국어 지원에 이어 사용자가 직접 언어를 변경(ENG/KOR)할 수 있는 UI 요소 추가 요청
+- 수행 내용:
+  - `public/index.html` 우상단 헤더 영역에 언어 전환 버튼(`.lang-toggle-btn`) 추가
+  - `public/app.js` 상태 관리 로직 업데이트: 현재 언어를 `localStorage`에 `weather_lang` 키로 저장하여 앱 재실행 시 유지
+  - 토글 시 `location.reload()`를 호출해 브라우저 렌더링을 완전히 교체하도록 설계
+- 검증 결과: 브라우저 환경에서 버튼 클릭 시 앱 언어 즉시 전환 및 새로고침 후 언어 상태 유지 확인
+- 결정 사항: 언어 설정 상태값은 `localStorage`를 최우선으로, 없을 경우 브라우저 감지 값(`navigator.language`)을 차선으로 사용
+- 다음 액션: 관련 변경사항 메인 브랜치 커밋
+- 참조 문서/커밋: `public/index.html`, `public/app.js`
+
+## 2026-03-12 15:40:10 +0900 - [Implement] - WL-d88c612db8434b448fe6f4cd2eec9369
+- 에이전트(agent): Antigravity
+- 요청/배경: 자동 기록 (branch: main)
+- 수행 내용:
+  - M	WORKLOG.md
+- 검증 결과: pre-commit hook 실행 완료
+- 결정 사항: 변경사항 커밋 진행
+- 다음 액션: 필요 시 Stage/설명 수동 보강
+- 참조 문서/커밋: base=907e17e, stats=+20/-0
+
+
+## 2026-03-12 17:30 - [Design/Build]
+- 요청/배경: 모바일 친화적인 상단 UI를 위한 프레임워크 전면 개편
+- 수행 내용:
+  - `public/index.html` 상단 구조 개편 (Location 헤더, KOR/ENG 둥근 토글, 탭 컨테이너, 검색창 숨김 레이아웃, 오늘/내일 하단 플렉스 버튼)
+  - `public/styles.css` UI 디자인 변경 사항 스타일링 적용
+  - `public/app.js` 다중 카드를 단일 뷰(활성화된 탭만 노출) 방식으로 변경하는 DOM/State 제어 추가
+  - 검색 추가 시 자동으로 검색창 닫힘 및 새 탭으로 포커싱 처리
+- 검증 결과: 탭 전환, KOR/ENG 언어 토글, 검색 및 지역 추가 정상 작동 확인 (서브에이전트 브라우저 모의 테스트 성공)
+- 결정 사항: "What to wear today?" 문구만 남기고 타이틀 및 서브타이틀 삭제하여 시각적 간결함 추구
+- 다음 액션: 코드 리뷰 및 Vercel 재배포 
+- 참조 문서/커밋: `public/index.html`, `public/styles.css`, `public/app.js`
