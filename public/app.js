@@ -552,6 +552,35 @@ function renderCards() {
         </div>
       </article>
         `;
+
+  // 모바일 touch 이벤트: 툴팁 탭으로 토글
+  bindTooltipTouchEvents();
+}
+
+function bindTooltipTouchEvents() {
+  const containers = cardsEl.querySelectorAll(".tooltip-container");
+  containers.forEach((el) => {
+    el.addEventListener("touchstart", (e) => {
+      e.preventDefault(); // 호버 에뮬레이션 방지
+      const isOpen = el.classList.contains("tooltip-active");
+      // 기존 열린 툴팁 모두 닫기
+      cardsEl.querySelectorAll(".tooltip-container.tooltip-active").forEach((t) => {
+        t.classList.remove("tooltip-active");
+      });
+      if (!isOpen) {
+        el.classList.add("tooltip-active");
+      }
+    }, { passive: false });
+  });
+
+  // 카드 영역 바깥 탭 시 툴팁 닫기
+  document.addEventListener("touchstart", (e) => {
+    if (!e.target.closest(".tooltip-container")) {
+      cardsEl.querySelectorAll(".tooltip-container.tooltip-active").forEach((t) => {
+        t.classList.remove("tooltip-active");
+      });
+    }
+  }, { passive: true });
 }
 
 function getWeatherIcon(description) {

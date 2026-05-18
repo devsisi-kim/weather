@@ -13,6 +13,16 @@
 - 다음 액션:
 - 참조 문서/커밋:
 
+## 2026-05-18 09:25 - [Feature/Deploy]
+- 요청/배경: 모바일 기기에서 툴팁이 동작하지 않는 문제 수정 및 Vercel 배포 실환경 점검
+- 수행 내용:
+  - `public/app.js`에 `touchstart` 이벤트 리스너 추가하여 모바일 환경에서 툴팁 탭 동작(토글) 구현
+  - `public/styles.css`에 `.tooltip-active` 클래스 추가하여 JS 제어로 툴팁 가시성 관리하도록 수정
+- 검증 결과: `npm test`를 통한 단위/통합 테스트 통과 (16건 성공), 서브에이전트 브라우저에서 모의 터치 등 점검 대기
+- 결정 사항: hover 외에도 touch 이벤트(모바일 탭)를 명시적으로 처리하여 UX 개선
+- 다음 액션: GitHub main 브랜치 푸시를 통한 Vercel 자동 배포 트리거 및 실환경 점검
+- 참조 문서/커밋: `public/app.js`, `public/styles.css`
+
 ## 2026-03-12 15:00 - [Build/Test]
 - 요청/배경: 최저/최고 기온 가시성 강화, UV Index 추천 고도화, 내일 추천 개선, 한영 다국어 지원 요청
 - 수행 내용:
@@ -231,3 +241,17 @@
 - 결정 사항: "What to wear today?" 문구만 남기고 타이틀 및 서브타이틀 삭제하여 시각적 간결함 추구
 - 다음 액션: 코드 리뷰 및 Vercel 재배포 
 - 참조 문서/커밋: `public/index.html`, `public/styles.css`, `public/app.js`
+## 2026-03-12 17:56:05 +0900 - [Implement] - WL-a5e14e5e7252440087dac7f68f035336
+- 에이전트(agent): Antigravity
+- 요청/배경: 자동 기록 (branch: main)
+- 수행 내용:
+  - M	WORKLOG.md
+  - M	public/app.js
+  - M	public/index.html
+  - M	public/styles.css
+  - M	src/server/app-server.js
+- 검증 결과: pre-commit hook 실행 완료
+- 결정 사항: 변경사항 커밋 진행
+- 다음 액션: 필요 시 Stage/설명 수동 보강
+- 참조 문서/커밋: base=c2c8a19, stats=+420/-157
+

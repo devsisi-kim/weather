@@ -648,7 +648,8 @@ button[disabled] {
 }
 
 .tooltip-container:hover .tooltip,
-.tooltip-container:active .tooltip {
+.tooltip-container:active .tooltip,
+.tooltip-container.tooltip-active .tooltip {
   visibility: visible;
   opacity: 1;
   transform: translateX(-50%) translateY(0);
