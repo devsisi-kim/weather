@@ -279,36 +279,6 @@ function buildFallbackWeather(reason = "외부 날씨 API 연결 실패") {
   };
 }
 
-async function fetchAirQualityFromWaqi(fetchImpl, { latitude, longitude }) {
-  const token = process.env.WAQI_TOKEN || "demo";
-  const endpoint = new URL(`https://api.waqi.info/feed/geo:${latitude};${longitude}/`);
-  endpoint.searchParams.set("token", token);
-
-  const response = await fetchImpl(endpoint);
-  if (!response.ok) {
-    return null;
-  }
-
-  const data = await response.json();
-  if (!data || data.status !== "ok" || !data.data) {
-    return null;
-  }
-
-  const aqi = data.data.aqi;
-  const iaqi = data.data.iaqi ?? {};
-
-  return {
-    pm25:
-      typeof iaqi.pm25?.v === "number"
-        ? iaqi.pm25.v
-        : typeof iaqi["p2"]?.v === "number"
-          ? iaqi["p2"].v
-          : null,
-    pm10: typeof iaqi.pm10?.v === "number" ? iaqi.pm10.v : null,
-    airQualityIndex: typeof aqi === "number" ? aqi : null,
-  };
-}
-
 function safeFilePath(urlPath) {
   const pathname = decodeURIComponent(urlPath.split("?")[0]);
   const target = pathname === "/" ? "/index.html" : pathname;
@@ -384,15 +354,6 @@ async function innerHandler(req, res, fetchImpl) {
               longitude: location.longitude,
               timezone: weather.timezone,
             });
-            if (!airQuality) {
-              const waqi = await fetchAirQualityFromWaqi(fetchImpl, {
-                latitude: location.latitude,
-                longitude: location.longitude,
-              });
-              if (waqi) {
-                airQuality = { today: waqi, tomorrow: {} };
-              }
-            }
           }
 
           if (airQuality && airQuality.today) {

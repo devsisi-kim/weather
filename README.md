@@ -28,7 +28,7 @@
 2. `POST /api/locations`로 위치를 추가합니다(최대 2개).
 3. `GET /api/recommendations`에서 각 위치별로 다음을 생성합니다.
    - 실시간 날씨(Open-Meteo)
-   - 대기질(Open-Meteo Air Quality, 실패 시 WAQI 보강)
+   - 대기질(Open-Meteo Air Quality)
    - 추천 의상/소품/노트(`recommendOutfit`)
 4. 날씨 API 실패 시 서버는 폴백 날씨값으로 응답을 계속 제공합니다.
 
@@ -42,11 +42,10 @@
 ## 환경 변수
 - `PORT`: 서버 시작 포트 (기본값 `8080`)
 - `HOST`: 바인딩 주소 (기본값 `127.0.0.1`)
-- `WAQI_TOKEN`: WAQI 토큰 (미설정 시 `demo`)
 
 예시:
 ```bash
-HOST=127.0.0.1 PORT=8080 WAQI_TOKEN=your_token npm start
+HOST=127.0.0.1 PORT=8080 npm start
 ```
 
 ## 실행
@@ -84,7 +83,6 @@ npm test
 1. Start Command(시작 명령): `npm start`
 2. `HOST=0.0.0.0` 설정 (외부 라우팅 허용)
 3. `PORT`는 플랫폼 제공 값을 사용하거나 환경 변수로 지정
-4. `WAQI_TOKEN` 설정 권장
 
 배포 후 검증:
 1. `GET /api/health`가 `{"ok":true}` 반환
@@ -107,4 +105,3 @@ npm test
 - Open-Meteo Geocoding API: 위치 검색
 - Open-Meteo Forecast API: 현재 날씨/일교차
 - Open-Meteo Air Quality API: PM2.5/PM10/US-AQI
-- WAQI API: 대기질 보강(fallback)

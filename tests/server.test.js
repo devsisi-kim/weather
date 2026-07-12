@@ -67,6 +67,46 @@ function buildFailingWeatherFetch() {
   };
 }
 
+function buildAirQualityFailingFetch(calls) {
+  return async function mockFetch(url) {
+    const target = typeof url === "string" ? new URL(url) : url;
+    calls.push(target.toString());
+
+    if (target.hostname === "api.open-meteo.com") {
+      return jsonResponse({
+        current: {
+          temperature_2m: 26,
+          relative_humidity_2m: 65,
+          uv_index: 7,
+          precipitation: 0.1,
+          time: "2026-03-03T09:00",
+        },
+        daily: {
+          weather_code: [1, 61],
+          precipitation_probability_max: [60, 40],
+          temperature_2m_max: [28, 24],
+          temperature_2m_min: [18, 14],
+          uv_index_max: [7, 5],
+          precipitation_sum: [0.5, 2.0],
+        },
+        hourly: {
+          temperature_2m: Array(48).fill(22),
+          uv_index: Array(48).fill(5),
+          relative_humidity_2m: Array(48).fill(60),
+          time: Array.from({ length: 48 }, (_, i) => `2026-03-03T${String(i % 24).padStart(2, "0")}:00`),
+        },
+        timezone: "Asia/Seoul",
+      });
+    }
+
+    if (target.hostname === "air-quality-api.open-meteo.com") {
+      return jsonResponse({ message: "Air quality unavailable" }, 503);
+    }
+
+    return jsonResponse({ message: "Unexpected request" }, 500);
+  };
+}
+
 function requestJson(port, method, pathname, body) {
   return new Promise((resolve, reject) => {
     const payload = body ? JSON.stringify(body) : "";
@@ -188,6 +228,21 @@ test("날씨 API 실패 시 fallback으로 응답되고 500을 반환하지 않�
     const card = response.body.cards[0];
     assert.equal(card.weather.source, "fallback", "source가 fallback이어야 함");
     assert.ok(card.recommendation, "fallback 상태에서도 recommendation이 존재해야 함");
+  });
+});
+
+test("Open-Meteo 대기질 실패 시 WAQI를 호출하지 않고 대기질 값을 비워둔다", async () => {
+  const calls = [];
+  await withServer(buildAirQualityFailingFetch(calls), async ({ port }) => {
+    const locations = [{ id: "t1", name: "Seoul", latitude: 37.5, longitude: 127.0 }];
+    const response = await requestJson(port, "POST", "/api/recommendations", { locations });
+
+    assert.equal(response.status, 200);
+    assert.equal(calls.some((url) => url.includes("api.waqi.info")), false);
+    const weather = response.body.cards[0].weather;
+    assert.equal(weather.pm25, null);
+    assert.equal(weather.pm10, null);
+    assert.equal(weather.airQualityIndex, null);
   });
 });
 
